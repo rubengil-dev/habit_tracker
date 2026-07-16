@@ -1,0 +1,7 @@
+__pycache*
+*.venv
+*env
+*.ipynb
+*.db
+*.sqlite3
+*.sqlite

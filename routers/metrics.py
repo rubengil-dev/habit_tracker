@@ -1,0 +1,72 @@
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from database import get_db
+from models import Metrics
+from schemas import MetricCreate, MetricUpdate
+
+router = APIRouter()
+
+# GET ALL METRICS
+@router.get("/metrics", status_code=200)
+def list_metrics(db: Session = Depends(get_db)):
+    return db.query(Metrics).all()
+
+# GET ALL METRICS FROM ONE HABIT
+@router.get("/habits/{habit_id}/metrics", status_code=200)
+def list_metrics_related(habit_id: int, db: Session = Depends(get_db)):
+    metrics = db.query(Metrics).filter(Metrics.habit_id == habit_id).all()
+
+    if not metrics:
+        raise HTTPException(status_code=404, detail=f"Habit #{habit_id} not found, so no metrics were returned.")
+
+    return metrics
+
+# GET ONE METRIC
+@router.get("/metric/{id}", status_code=200)
+def get_metric(id: int, db: Session = Depends(get_db)):
+    metric = db.query(Metrics).filter(Metrics.id == id).first()
+
+    if metric is None:
+        raise HTTPException(status_code=404, detail="Metric not found")
+    return metric
+
+# CREATE METRIC
+@router.post("/metrics", status_code=201)
+def create_metric(data: MetricCreate, db: Session = Depends(get_db)):
+    new_metric = Metrics(
+        habit_id=data.habit_id,
+        metric=data.metric,
+        unit=data.unit,
+        calculated=data.calculated,
+        formula=data.formula
+    )
+
+    db.add(new_metric)
+    db.commit()
+    db.refresh(new_metric)
+    return new_metric
+
+# UPDATE METRICS
+@router.patch("/metric/{id}", status_code=200)
+def update_metric(id: int, data: MetricUpdate, db: Session = Depends(get_db)):
+    metric = db.query(Metrics).filter(Metrics.id == id).first()
+
+    if metric is None:
+        raise HTTPException(status_code=404, detail="Metric not found")
+
+    for key, value in data.model_dump(exclude_unset=True).items():
+        setattr(metric, key, value)
+
+    db.commit()
+    db.refresh(metric)
+    return metric
+
+# DELETE METRIC
+@router.delete("/metric/{id}", status_code=204)
+def delete_metric(id: int, db: Session = Depends(get_db)):
+    metric = db.query(Metrics).filter(Metrics.id == id).first()
+
+    if metric is None:
+        raise HTTPException(status_code=404, detail="Metric not found")
+    db.delete(metric)
+    db.commit()

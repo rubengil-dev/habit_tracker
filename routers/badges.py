@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
-from models import Badges
+from models import Badges, Habits
 from schemas import BadgeCreate, BadgeUpdate
 
 router = APIRouter()
@@ -14,12 +14,11 @@ def list_badges(db: Session = Depends(get_db)):
 # GET ALL BADGES FROM ONE HABIT
 @router.get("/habits/{habit_id}/badges", status_code=200)
 def list_badges_related(habit_id: int, db: Session = Depends(get_db)):
-    badges = db.query(Badges).filter(Badges.habit_id == habit_id).all()
+    habit = db.query(Habits).filter(Habits.id == habit_id).first()
+    if habit is None:
+        raise HTTPException(status_code=404, detail=f"Habit #{habit_id} not found")
 
-    if not badges:
-        raise HTTPException(status_code=404, detail=f"Habit #{habit_id} not found, so no badges were returned.")
-
-    return badges
+    return db.query(Badges).filter(Badges.habit_id == habit_id).all()
 
 # GET ONE BADGE
 @router.get("/badges/{id}", status_code=200)
@@ -44,8 +43,11 @@ def create_badge(data: BadgeCreate, db: Session = Depends(get_db)):
         gold=data.gold,
         diamond=data.diamond,
         current_value=data.current_value,
-        current_tier=data.current_tier
-        )
+        current_tier=data.current_tier,
+        frequency_target=data.frequency_target,
+        frequency_period=data.frequency_period,
+        higher_is_better=data.higher_is_better
+    )
 
     db.add(new_badge)
     db.commit()

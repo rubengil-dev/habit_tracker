@@ -55,8 +55,6 @@ class Metrics(Base):
         return f"Metric #{self.id} {self.metric} belongs to habit #{self.habit_id}"
 
 # BADGES
-
-
 class Badges(Base):
     __tablename__ = "badges"
 
@@ -66,6 +64,10 @@ class Badges(Base):
     metric_id = Column(Integer, ForeignKey("metrics.id"), nullable=False)
     badge = Column(String, nullable=False)
     metric_type = Column(String, nullable=False)
+
+    frequency_target = Column(Integer, nullable=True)
+    frequency_period = Column(String, nullable=True)
+    higher_is_better = Column(Boolean, default=True)
 
     unlocked = Column(Float, nullable=False)
     bronze = Column(Float, nullable=False)

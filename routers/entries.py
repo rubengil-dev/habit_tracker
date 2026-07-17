@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
-from models import Entries
+from models import Entries, Habits
 from schemas import EntryCreate, EntryUpdate
 
 router = APIRouter()
@@ -14,12 +14,11 @@ def list_entries(db: Session = Depends(get_db)):
 # GET ALL ENTRIES FROM ONE HABIT
 @router.get("/habits/{habit_id}/entries", status_code=200)
 def list_entries_related(habit_id: int, db: Session = Depends(get_db)):
-    entries = db.query(Entries).filter(Entries.habit_id == habit_id).all()
+    habit = db.query(Habits).filter(Habits.id == habit_id).first()
+    if habit is None:
+        raise HTTPException(status_code=404, detail=f"Habit #{habit_id} not found")
 
-    if not entries:
-        raise HTTPException(status_code=404, detail=f"Habit #{habit_id} not found, so no entries were returned.")
-
-    return entries
+    return db.query(Entries).filter(Entries.habit_id == habit_id).all()
 
 # GET ONE ENTRY
 @router.get("/entries/{id}", status_code=200)

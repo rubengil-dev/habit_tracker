@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
-from models import Metrics
+from models import Metrics, Habits
 from schemas import MetricCreate, MetricUpdate
 
 router = APIRouter()
@@ -14,15 +14,14 @@ def list_metrics(db: Session = Depends(get_db)):
 # GET ALL METRICS FROM ONE HABIT
 @router.get("/habits/{habit_id}/metrics", status_code=200)
 def list_metrics_related(habit_id: int, db: Session = Depends(get_db)):
-    metrics = db.query(Metrics).filter(Metrics.habit_id == habit_id).all()
+    habit = db.query(Habits).filter(Habits.id == habit_id).first()
+    if habit is None:
+        raise HTTPException(status_code=404, detail=f"Habit #{habit_id} not found")
 
-    if not metrics:
-        raise HTTPException(status_code=404, detail=f"Habit #{habit_id} not found, so no metrics were returned.")
-
-    return metrics
+    return db.query(Metrics).filter(Metrics.habit_id == habit_id).all()
 
 # GET ONE METRIC
-@router.get("/metric/{id}", status_code=200)
+@router.get("/metrics/{id}", status_code=200)
 def get_metric(id: int, db: Session = Depends(get_db)):
     metric = db.query(Metrics).filter(Metrics.id == id).first()
 

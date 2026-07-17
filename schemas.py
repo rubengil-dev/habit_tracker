@@ -44,11 +44,14 @@ class BadgeCreate(BaseModel):
     metric_id: int
     badge: str
     metric_type: str
-    unlocked: int
-    bronze: int
-    silver: int
-    gold: int
-    diamond: int
+    unlocked: float
+    bronze: float
+    silver: float
+    gold: float
+    diamond: float
+    frequency_target: Optional[int] = None
+    frequency_period: Optional[str] = None
+    higher_is_better: bool = True
     current_value: Optional[int] = 0
     current_tier: Optional[str] = 'unlocked'
 
@@ -59,11 +62,14 @@ class BadgeUpdate(BaseModel):
     metric_id: Optional[int] = None
     badge: Optional[str] = None
     metric_type: Optional[str] = None
-    unlocked: Optional[int] = None
-    bronze: Optional[int] = None
-    silver: Optional[int] = None
-    gold: Optional[int] = None
-    diamond: Optional[int] = None
+    unlocked: Optional[float] = None
+    bronze: Optional[float] = None
+    silver: Optional[float] = None
+    gold: Optional[float] = None
+    diamond: Optional[float] = None
+    frequency_target: Optional[int] = None
+    frequency_period: Optional[str] = None
+    higher_is_better: Optional[bool] = None
     current_value: Optional[int] = None
     current_tier: Optional[str] = None
 

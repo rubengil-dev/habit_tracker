@@ -1,7 +1,11 @@
+"""
+This page contains the necessary functions to re-calcule de badge's progress based on new/delete entries.
+"""
+
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from models import Badges, Entries
-from badge_utils import check_tier, get_period
+from services.utils import check_tier, get_period
 from collections import defaultdict
 
 def calculation_router(db: Session, badge: Badges) -> tuple[float, str]:

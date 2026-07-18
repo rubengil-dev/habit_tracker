@@ -4,6 +4,7 @@ from database import get_db
 from models import Entries, Habits, Badges, Metrics
 from schemas import EntryCreate, EntryUpdate
 from services.badge_progress import calculation_router
+from services.calc_streaks import calculate_habit_streak
 
 router = APIRouter()
 
@@ -111,9 +112,13 @@ def create_entry(data: EntryCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_entry)
 
-    # Recalculates badges
+    # Recalculates badge's progress
     badges_update = recalculate_badges(db, new_entry.metric_id)
-    return {"entry": new_entry, "badges_update": badges_update}
+
+    # Recalculates habit's streaks
+    streak_update = calculate_habit_streak(new_entry.habit_id, db)
+
+    return {"entry": new_entry, "badges_update": badges_update, "streak_update": streak_update}
 
 # UPDATE ENTRY
 @router.patch("/entries/{id}", status_code=200)
@@ -169,11 +174,14 @@ def update_entry(id: int, data: EntryUpdate, db: Session = Depends(get_db)):
     for metric_id in metric_ids:
         badges_update += recalculate_badges(db, metric_id)
 
-    return {"entry": entry, "badges_update": badges_update}
+    # Recalculates streak, using the entry's current (post-update) habit_id
+    streak_update = calculate_habit_streak(entry.habit_id, db)
+
+    return {"entry": entry, "badges_update": badges_update, "streak_update": streak_update}
 
 
 # DELETE ENTRY
-@router.delete("/entries/{id}", status_code=204)
+@router.delete("/entries/{id}", status_code=200)
 def delete_entry(id: int, db: Session = Depends(get_db)):
     """Deletes an existing entry."""
 
@@ -184,8 +192,17 @@ def delete_entry(id: int, db: Session = Depends(get_db)):
     if entry is None:
         raise HTTPException(status_code=404, detail="Entry not found")
 
-    # DataBase update and badge recalculation
+    # DataBase update
     metric_id = entry.metric_id
+    habit_id = entry.habit_id
+
     db.delete(entry)
     db.commit()
-    recalculate_badges(db, metric_id)
+
+    # Recalculates badge's progress
+    badges_update = recalculate_badges(db, metric_id)
+
+    # Recalculates habit's streaks
+    streak_update = calculate_habit_streak(habit_id, db)
+
+    return {"badges_update": badges_update, "streak_update": streak_update}

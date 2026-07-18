@@ -1,5 +1,5 @@
 from enums import Tier
-from datetime import date
+from datetime import date, timedelta
 from models import Badges
 
 def check_tier(badge: Badges, value: float) -> str:
@@ -36,5 +36,37 @@ def get_period(entry_date: date, frequency_period: str) -> tuple:
         return (entry_date.year, half)
     elif frequency_period == "yearly":
         return (entry_date.year,)
+    else:
+        raise ValueError(f"Unknown frequency_period: {frequency_period}")
+    
+def get_previous_period(cursor_date: date, frequency_period: str) -> date:
+    """Returns a date that falls inside the period immediately before the one
+    containing cursor_date. Meant to be chained with get_period to walk backwards
+    period by period (used by the habit streak calculation)."""
+
+    if frequency_period == "daily":
+        return cursor_date - timedelta(days=1)
+
+    elif frequency_period == "weekly":
+        return cursor_date - timedelta(days=7)
+
+    elif frequency_period == "monthly":
+        first_day_of_month = cursor_date.replace(day=1)
+        return first_day_of_month - timedelta(days=1)
+
+    elif frequency_period == "quarterly":
+        quarter_start_month = ((cursor_date.month - 1) // 3) * 3 + 1
+        first_day_of_quarter = cursor_date.replace(month=quarter_start_month, day=1)
+        return first_day_of_quarter - timedelta(days=1)
+
+    elif frequency_period == "halfyearly":
+        half_start_month = 1 if cursor_date.month <= 6 else 7
+        first_day_of_half = cursor_date.replace(month=half_start_month, day=1)
+        return first_day_of_half - timedelta(days=1)
+
+    elif frequency_period == "yearly":
+        first_day_of_year = cursor_date.replace(month=1, day=1)
+        return first_day_of_year - timedelta(days=1)
+
     else:
         raise ValueError(f"Unknown frequency_period: {frequency_period}")

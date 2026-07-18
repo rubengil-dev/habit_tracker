@@ -46,7 +46,7 @@ def create_metric(data: MetricCreate, db: Session = Depends(get_db)):
     return new_metric
 
 # UPDATE METRICS
-@router.patch("/metric/{id}", status_code=200)
+@router.patch("/metrics/{id}", status_code=200)
 def update_metric(id: int, data: MetricUpdate, db: Session = Depends(get_db)):
     metric = db.query(Metrics).filter(Metrics.id == id).first()
 
@@ -61,7 +61,7 @@ def update_metric(id: int, data: MetricUpdate, db: Session = Depends(get_db)):
     return metric
 
 # DELETE METRIC
-@router.delete("/metric/{id}", status_code=204)
+@router.delete("/metrics/{id}", status_code=204)
 def delete_metric(id: int, db: Session = Depends(get_db)):
     metric = db.query(Metrics).filter(Metrics.id == id).first()
 

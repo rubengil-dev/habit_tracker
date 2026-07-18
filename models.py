@@ -68,6 +68,7 @@ class Badges(Base):
     frequency_target = Column(Integer, nullable=True)
     frequency_period = Column(String, nullable=True)
     higher_is_better = Column(Boolean, default=True)
+    threshold_value = Column(Float, nullable=True)
 
     unlocked = Column(Float, nullable=False)
     bronze = Column(Float, nullable=False)
@@ -80,12 +81,21 @@ class Badges(Base):
 
     # Constraints
     __table_args__ = (
+
+        # Tiers must follow this order: 0 < Unlocked < Bronze < Silver < Gold < Diamond
         CheckConstraint(
+            "0 < unlocked AND "
             "unlocked < bronze AND "
             "bronze < silver AND "
             "silver < gold AND "
             "gold < diamond",
             name="tiers_check"
+        ),
+
+        # If metric_type is OBJECTIVE, threshold_value cant be NULL
+        CheckConstraint(
+            "(metric_type != 'objective') OR (threshold_value IS NOT NULL)",
+            name="objective_requires_threshold"
         ),
     )
 

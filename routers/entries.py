@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
-from models import Entries, Habits
+from models import Entries, Habits, Badges
 from schemas import EntryCreate, EntryUpdate
+from services.badge_progress import calculation_router
 
 router = APIRouter()
 
@@ -29,6 +30,38 @@ def get_entry(id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Entry not found")
     return entry
 
+
+
+# BADGE RECALCULATION
+def recalculate_badges(db: Session, metric_id: int) -> list[dict]:
+    """ 1. Finds every badge linked to a metric. 
+        2. Recalculates.
+        3. Saves new value and tier.
+        4. Reports whether its tier changed."""
+    
+    affected_badges = db.query(Badges).filter(Badges.metric_id == metric_id).all()  # Obtains affected badges
+    results = []
+
+    for badge in affected_badges:                                                   # For each badge, saves previous values and tiers
+        old_tier = badge.current_tier                                   
+        new_value, new_tier = calculation_router(db, badge)                         # and calculates new ones
+
+        # Saving new values
+        badge.current_value = new_value
+        badge.current_tier = new_tier
+
+        # Necesary to know if tier changed
+        results.append({
+            "badge_id": badge.id,
+            "current_value": new_value,
+            "old_tier": old_tier,
+            "new_tier": new_tier,
+            "tier_changed": old_tier != new_tier
+        })
+
+    db.commit()
+    return results
+
 # CREATE ENTRY
 @router.post("/entries", status_code=201)
 def create_entry(data: EntryCreate, db: Session = Depends(get_db)):
@@ -42,7 +75,10 @@ def create_entry(data: EntryCreate, db: Session = Depends(get_db)):
     db.add(new_entry)
     db.commit()
     db.refresh(new_entry)
-    return new_entry
+
+    badges_update = recalculate_badges(db, new_entry.metric_id)
+
+    return {"entry": new_entry, "badges_update": badges_update}
 
 # UPDATE ENTRY
 @router.patch("/entries/{id}", status_code=200)
@@ -52,12 +88,23 @@ def update_entry(id: int, data: EntryUpdate, db: Session = Depends(get_db)):
     if entry is None:
         raise HTTPException(status_code=404, detail="Entry not found")
 
+    old_metric_id = entry.metric_id
+
     for key, value in data.model_dump(exclude_unset=True).items():
         setattr(entry, key, value)
 
     db.commit()
     db.refresh(entry)
-    return entry
+
+    # Recalculate badges for both the old and new metric_id, in case metric_id itself changed
+    metric_ids = {old_metric_id, entry.metric_id}
+    badges_update = []
+
+    for metric_id in metric_ids:
+        badges_update += recalculate_badges(db, metric_id)
+
+    return {"entry": entry, "badges_update": badges_update}
+
 
 # DELETE ENTRY
 @router.delete("/entries/{id}", status_code=204)
@@ -67,5 +114,9 @@ def delete_entry(id: int, db: Session = Depends(get_db)):
     if entry is None:
         raise HTTPException(status_code=404, detail="Entry not found")
 
+    metric_id = entry.metric_id   # capturado ANTES de borrar
+
     db.delete(entry)
     db.commit()
+
+    recalculate_badges(db, metric_id)

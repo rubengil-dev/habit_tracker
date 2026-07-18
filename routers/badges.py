@@ -46,7 +46,8 @@ def create_badge(data: BadgeCreate, db: Session = Depends(get_db)):
         current_tier=data.current_tier,
         frequency_target=data.frequency_target,
         frequency_period=data.frequency_period,
-        higher_is_better=data.higher_is_better
+        higher_is_better=data.higher_is_better,
+        threshold_value=data.threshold_value
     )
 
     db.add(new_badge)
@@ -55,7 +56,7 @@ def create_badge(data: BadgeCreate, db: Session = Depends(get_db)):
     return new_badge
 
 # UPDATE BADGE
-@router.patch("/badge/{id}", status_code=200)
+@router.patch("/badges/{id}", status_code=200)
 def update_badge(id: int, data: BadgeUpdate, db: Session = Depends(get_db)):
     badge = db.query(Badges).filter(Badges.id == id).first()
 

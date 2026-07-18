@@ -1,7 +1,8 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from models import Badges, Entries
-from enums import Tier
+from badge_utils import check_tier, get_period
+from collections import defaultdict
 
 def calculation_router(db: Session, badge: Badges) -> tuple[float, str]:
     """Dispatches to the right calculation function based on the badge's metric_type."""
@@ -17,20 +18,6 @@ def calculation_router(db: Session, badge: Badges) -> tuple[float, str]:
     else:
         raise ValueError(f"Unknown metric_type: {badge.metric_type}")
 
-def check_tier(badge: Badges, value: float) -> str:
-    """Compares a value against a badge's thresholds and returns the matching tier."""
-    if value < badge.unlocked:
-        return Tier.LOCKED
-    elif value >= badge.diamond:
-        return Tier.DIAMOND
-    elif value >= badge.gold:
-        return Tier.GOLD
-    elif value >= badge.silver:
-        return Tier.SILVER
-    elif value >= badge.bronze:
-        return Tier.BRONZE
-    else:
-        return Tier.UNLOCKED
 
 def calculate_historic(db: Session, badge: Badges) -> tuple[float, str]:
     """Calculates the cumulative sum of a badge's entries and returns (value, tier)."""
@@ -62,13 +49,30 @@ def calculate_objective(db: Session, badge: Badges) -> tuple[float, str]:
     else:
         query = query.filter(Entries.value <= badge.threshold_value)
 
-    value = query.scalar() or 0
+    value = query.scalar() or 0     # Managing no entries
     tier = check_tier(badge, value)
     return value, tier
 
 
 def calculate_consistency(db: Session, badge: Badges) -> tuple[float, str]:
-    """ TODO """
-    
-    # TODO
-    pass
+    """Counts how many periods (week/month/quarter/etc.) reached the badge's
+    frequency_target, counting only entries that pass threshold_value (if set)."""
+
+    query = db.query(Entries.date).filter(Entries.metric_id == badge.metric_id)
+
+    if badge.threshold_value is not None:
+        if badge.higher_is_better:
+            query = query.filter(Entries.value >= badge.threshold_value)
+        else:
+            query = query.filter(Entries.value <= badge.threshold_value)
+
+    entries = query.all()
+    counts = defaultdict(int)
+
+    for (entry_date,) in entries:
+        key = get_period(entry_date, badge.frequency_period)
+        counts[key] += 1
+
+    value = sum(1 for count in counts.values() if count >= badge.frequency_target)
+    tier = check_tier(badge, value)
+    return value, tier

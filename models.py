@@ -44,15 +44,25 @@ class Metrics(Base):
 
     # Columns
     id = Column(Integer, primary_key=True)
-    habit_id = Column(Integer, ForeignKey("habits.id"), nullable=False)
+    habit_id = Column(Integer, ForeignKey("habits.id", ondelete="CASCADE"), nullable=False)
     metric = Column(String, nullable=False)
     unit = Column(String, nullable=False)
-    calculated = Column(Boolean, default=False)
-    formula = Column(String, nullable=True)
+    calculated = Column(Boolean, default=False)     # For secondary metrics as Pace (x/t) for Run
+    formula = Column(String, nullable=True)         # How to calculate the secondary metric
 
     # Print managing
     def __repr__(self):
         return f"Metric #{self.id} {self.metric} belongs to habit #{self.habit_id}"
+    
+    # Constraints
+    __table_args__ = (
+
+        # If a metric is calculated = TRUE, formula cant be 0.
+        CheckConstraint(
+            "calculated = 0 OR (formula IS NOT NULL)",
+            name="calculated_requires_formula"
+        ),
+    )
 
 # BADGES
 class Badges(Base):
@@ -60,15 +70,15 @@ class Badges(Base):
 
     # Columns
     id = Column(Integer, primary_key=True)
-    habit_id = Column(Integer, ForeignKey("habits.id"), nullable=False)
-    metric_id = Column(Integer, ForeignKey("metrics.id"), nullable=False)
+    habit_id = Column(Integer, ForeignKey("habits.id", ondelete="CASCADE"), nullable=False)
+    metric_id = Column(Integer, ForeignKey("metrics.id", ondelete="CASCADE"), nullable=False)
     badge = Column(String, nullable=False)
-    metric_type = Column(String, nullable=False)
+    metric_type = Column(String, nullable=False)            # Detailed in "enums.py"
 
-    frequency_target = Column(Integer, nullable=True)
-    frequency_period = Column(String, nullable=True)
-    higher_is_better = Column(Boolean, default=True)
-    threshold_value = Column(Float, nullable=True)
+    frequency_target = Column(Integer, nullable=True)       # How many times to do smth in "frequency_period"
+    frequency_period = Column(String, nullable=True)        # See enums.py to check options of time window
+    higher_is_better = Column(Boolean, default=True)        # Metrics as Pace is better as lower it is. Uncheck it in those cases
+    threshold_value = Column(Float, nullable=True)          # Needed for metric_type "objective"
 
     unlocked = Column(Float, nullable=False)
     bronze = Column(Float, nullable=False)
@@ -97,6 +107,12 @@ class Badges(Base):
             "(metric_type != 'objective') OR (threshold_value IS NOT NULL)",
             name="objective_requires_threshold"
         ),
+        
+        # If metric_type is CONSISTENCY, frequency target and period cant be NULL   
+        CheckConstraint(
+            "metric_type != 'consistency' OR (frequency_target IS NOT NULL AND frequency_period IS NOT NULL)",
+            name="consistency_requires_frequency"
+        ),
     )
 
     # Print managing
@@ -109,8 +125,8 @@ class Entries(Base):
 
     # Columns
     id = Column(Integer, primary_key=True)
-    habit_id = Column(Integer, ForeignKey("habits.id"), nullable=False)
-    metric_id = Column(Integer, ForeignKey("metrics.id"), nullable=False)
+    habit_id = Column(Integer, ForeignKey("habits.id", ondelete="CASCADE"), nullable=False)
+    metric_id = Column(Integer, ForeignKey("metrics.id", ondelete="CASCADE"), nullable=False)
     value = Column(Float, nullable=False)
     date = Column(Date, nullable=False)
 

@@ -5,7 +5,7 @@ This script creates every Pydantic model needed
 from pydantic import BaseModel
 from typing import Optional
 from datetime import date as d_date
-from enums import MetricType, Tier
+from enums import MetricType, Tier, FrequencyPeriod
 
 ## HABIT SCHEMAS
 
@@ -51,7 +51,7 @@ class BadgeCreate(BaseModel):
     gold: float
     diamond: float
     frequency_target: Optional[int] = None
-    frequency_period: Optional[str] = None
+    frequency_period: Optional[FrequencyPeriod] = None
     higher_is_better: bool = True
     threshold_value: Optional[float] = None
     current_value: Optional[float] = 0
@@ -70,10 +70,10 @@ class BadgeUpdate(BaseModel):
     gold: Optional[float] = None
     diamond: Optional[float] = None
     frequency_target: Optional[int] = None
-    frequency_period: Optional[str] = None
+    frequency_period: Optional[FrequencyPeriod] = None
     higher_is_better: Optional[bool] = None
     threshold_value: Optional[float] = None
-    current_value: Optional[int] = None
+    current_value: Optional[float] = None
     current_tier: Optional[Tier] = None
 
 ## ENTRY SCHEMAS

@@ -3,9 +3,10 @@ This page contains the functions necessary to calcule streaks to show them on fr
 """
 
 from datetime import date
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from models import Badges, Entries
-from services.utils import get_period, get_previous_period
+from services.utils import get_period, get_previous_period, get_period_bounds
 from enums import FrequencyPeriod
 from datetime import date
 from collections import defaultdict
@@ -19,10 +20,17 @@ def current_badge_progress(badge: Badges, db: Session) -> tuple[int, int]:
     """Returns (current, target) progress for a consistency badge's CURRENT period.
        This is the functions that calcules the streak within a badge's period to display it."""
 
-    # Query preparation
-    query = db.query(Entries).filter(Entries.metric_id == badge.metric_id)
+    # Get current period date bounds
+    start, end = get_period_bounds(date.today(), badge.frequency_period)
 
-    # Threshold comparison
+    # Query preparation
+    query = db.query(func.count(Entries.id)).filter(
+    Entries.metric_id == badge.metric_id,
+    Entries.date >= start,
+    Entries.date <= end
+    )
+
+    # Threshold comparison to complete query
     if badge.threshold_value is not None:
 
         if badge.higher_is_better:
@@ -31,13 +39,8 @@ def current_badge_progress(badge: Badges, db: Session) -> tuple[int, int]:
             query = query.filter(Entries.value <= badge.threshold_value)
 
     # Query itself
-    entries = query.all()
+    count = query.scalar() or 0
 
-    # Current period
-    current_period = get_period(date.today(), badge.frequency_period)
-
-    # Actual progress
-    count = sum(1 for entry in entries if get_period(entry.date, badge.frequency_period) == current_period)
     return (count, badge.frequency_target)
 
 # ------------------------- HABITS ------------------------- #

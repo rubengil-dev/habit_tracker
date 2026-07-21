@@ -20,8 +20,12 @@ Base = declarative_base()
 # FastAPI will use this function to Open-Operate-Close in each endpoint
 def get_db():
     db = SessionLocal()         # Session opening
+
     try:
         yield db                # Give session to endpoint and wait
+    except Exception:
+        db.rollback()           # Undo partial changes on any error
+        raise                   # Re-raise so the exception handler in main.py catches it
     
     finally:
         db.close()              # Session closing

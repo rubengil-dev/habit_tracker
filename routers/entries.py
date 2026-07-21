@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import Entries, Habits, Badges, Metrics
 from schemas import EntryCreate, EntryUpdate
-from services.badge_progress import calculation_router
+from services.badge_progress import calculation_router, recalculate_badges
 from services.calc_streaks import calculate_habit_streak
 
 router = APIRouter()
@@ -42,41 +42,6 @@ def get_entry(id: int, db: Session = Depends(get_db)):
     if entry is None:
         raise HTTPException(status_code=404, detail="Entry not found")
     return entry
-
-
-
-# BADGE RECALCULATION
-def recalculate_badges(db: Session, metric_id: int) -> list[dict]:
-    """ 1. Finds every badge linked to a metric. 
-        2. Recalculates.
-        3. Saves new value and tier.
-        4. Reports whether its tier changed."""
-    
-    # Obtains affected badges
-    affected_badges = db.query(Badges).filter(Badges.metric_id == metric_id).all()
-    results = []
-
-    # For each badge, saves previous values and tiers and calculates new ones
-    for badge in affected_badges:
-        old_tier = badge.current_tier                                   
-        new_value, new_tier = calculation_router(db, badge)
-
-        # Saving new values
-        badge.current_value = new_value
-        badge.current_tier = new_tier
-
-        # Necesary to know if tier changed
-        results.append({
-            "badge_id": badge.id,
-            "current_value": new_value,
-            "old_tier": old_tier,
-            "new_tier": new_tier,
-            "tier_changed": old_tier != new_tier
-        })
-
-    # DataBase Update
-    db.commit()
-    return results
 
 # CREATE ENTRY
 @router.post("/entries", status_code=201)

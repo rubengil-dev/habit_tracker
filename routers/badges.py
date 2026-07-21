@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import Badges, Habits, Metrics
 from schemas import BadgeCreate, BadgeUpdate
+from services.badge_progress import recalculate_badges
 
 router = APIRouter()
 
@@ -73,8 +74,6 @@ def create_badge(data: BadgeCreate, db: Session = Depends(get_db)):
         silver=data.silver,
         gold=data.gold,
         diamond=data.diamond,
-        current_value=data.current_value,
-        current_tier=data.current_tier,
         frequency_target=data.frequency_target,
         frequency_period=data.frequency_period,
         higher_is_better=data.higher_is_better,
@@ -85,6 +84,8 @@ def create_badge(data: BadgeCreate, db: Session = Depends(get_db)):
     db.add(new_badge)
     db.commit()
     db.refresh(new_badge)
+
+    recalculate_badges(db, new_badge.metric_id)
     return new_badge
 
 # UPDATE BADGE
@@ -124,14 +125,21 @@ def update_badge(id: int, data: BadgeUpdate, db: Session = Depends(get_db)):
         
         if metric.habit_id != new_habit_id:
             raise HTTPException(status_code=400, detail="metric_id does not belong to habit_id")
+        
+    # Saving for later
+    old_metric_id = badge.metric_id
 
     # Update itself
     for key, value in data.model_dump(exclude_unset=True).items():
         setattr(badge, key, value)
 
-    # DataBase update
     db.commit()
     db.refresh(badge)
+
+    metric_ids = {old_metric_id, badge.metric_id}
+    for metric_id in metric_ids:
+        recalculate_badges(db, metric_id)
+
     return badge
 
 # DELETE BADGE

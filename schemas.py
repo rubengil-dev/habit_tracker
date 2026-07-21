@@ -54,8 +54,6 @@ class BadgeCreate(BaseModel):
     frequency_period: Optional[FrequencyPeriod] = None
     higher_is_better: bool = True
     threshold_value: Optional[float] = None
-    current_value: Optional[float] = 0
-    current_tier: Optional[Tier] = Tier.LOCKED
 
 
 # UPDATE
@@ -73,8 +71,6 @@ class BadgeUpdate(BaseModel):
     frequency_period: Optional[FrequencyPeriod] = None
     higher_is_better: Optional[bool] = None
     threshold_value: Optional[float] = None
-    current_value: Optional[float] = None
-    current_tier: Optional[Tier] = None
 
 ## ENTRY SCHEMAS
 

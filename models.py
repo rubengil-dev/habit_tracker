@@ -19,6 +19,12 @@ This file creates de database schema.
 from sqlalchemy import Column, Integer, Float, String, Boolean, Date, ForeignKey
 from database import Base
 from sqlalchemy import CheckConstraint
+from enums import MetricType, Tier, FrequencyPeriod
+
+# ENUMs use to protect BBDD's writting from any entry
+_valid_metric_types = ", ".join(f"'{t.value}'" for t in MetricType)
+_valid_tiers = ", ".join(f"'{t.value}'" for t in Tier)
+_valid_frequency_periods = ", ".join(f"'{p.value}'" for p in FrequencyPeriod)
 
 # HABITS
 class Habits(Base):
@@ -44,7 +50,7 @@ class Metrics(Base):
 
     # Columns
     id = Column(Integer, primary_key=True)
-    habit_id = Column(Integer, ForeignKey("habits.id", ondelete="CASCADE"), nullable=False)
+    habit_id = Column(Integer, ForeignKey("habits.id", ondelete="CASCADE"), nullable=False, index=True)
     metric = Column(String, nullable=False)
     unit = Column(String, nullable=False)
     calculated = Column(Boolean, default=False)     # For secondary metrics as Pace (x/t) for Run
@@ -70,8 +76,8 @@ class Badges(Base):
 
     # Columns
     id = Column(Integer, primary_key=True)
-    habit_id = Column(Integer, ForeignKey("habits.id", ondelete="CASCADE"), nullable=False)
-    metric_id = Column(Integer, ForeignKey("metrics.id", ondelete="CASCADE"), nullable=False)
+    habit_id = Column(Integer, ForeignKey("habits.id", ondelete="CASCADE"), nullable=False, index=True)
+    metric_id = Column(Integer, ForeignKey("metrics.id", ondelete="CASCADE"), nullable=False, index=True)
     badge = Column(String, nullable=False)
     metric_type = Column(String, nullable=False)            # Detailed in "enums.py"
 
@@ -92,13 +98,11 @@ class Badges(Base):
     # Constraints
     __table_args__ = (
 
-        # Tiers must follow this order: 0 < Unlocked < Bronze < Silver < Gold < Diamond
+        # Tiers must be ordered ASC or DESC based on higer_is_better
         CheckConstraint(
-            "0 < unlocked AND "
-            "unlocked < bronze AND "
-            "bronze < silver AND "
-            "silver < gold AND "
-            "gold < diamond",
+            "(higher_is_better = 1 AND 0 < unlocked AND unlocked < bronze AND bronze < silver AND silver < gold AND gold < diamond) "
+            "OR "
+            "(higher_is_better = 0 AND unlocked > bronze AND bronze > silver AND silver > gold AND gold > diamond AND diamond > 0)",
             name="tiers_check"
         ),
 
@@ -113,6 +117,24 @@ class Badges(Base):
             "metric_type != 'consistency' OR (frequency_target IS NOT NULL AND frequency_period IS NOT NULL)",
             name="consistency_requires_frequency"
         ),
+
+        # ENUM protection for METRIC_TYPE
+        CheckConstraint(
+            f"metric_type IN ({_valid_metric_types})",
+            name="valid_metric_type"
+        ),
+
+        # ENUM protection for CURRENT_TIER
+        CheckConstraint(
+            f"current_tier IN ({_valid_tiers})",
+            name="valid_current_tier"
+        ),
+
+        # ENUM protection for FREQUENCY_PERIOD
+        CheckConstraint(
+            f"frequency_period IS NULL OR frequency_period IN ({_valid_frequency_periods})",
+            name="valid_frequency_period"
+        )
     )
 
     # Print managing
@@ -125,8 +147,8 @@ class Entries(Base):
 
     # Columns
     id = Column(Integer, primary_key=True)
-    habit_id = Column(Integer, ForeignKey("habits.id", ondelete="CASCADE"), nullable=False)
-    metric_id = Column(Integer, ForeignKey("metrics.id", ondelete="CASCADE"), nullable=False)
+    habit_id = Column(Integer, ForeignKey("habits.id", ondelete="CASCADE"), nullable=False, index=True)
+    metric_id = Column(Integer, ForeignKey("metrics.id", ondelete="CASCADE"), nullable=False, index=True)
     value = Column(Float, nullable=False)
     date = Column(Date, nullable=False)
 

@@ -6,10 +6,8 @@ from datetime import date
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from models import Badges, Entries
-from services.utils import get_period, get_previous_period, get_period_bounds
+from services.utils import get_period, get_previous_period, get_period_bounds, count_entries_by_period
 from enums import FrequencyPeriod
-from datetime import date
-from collections import defaultdict
 
 # Constant: Periods and their orders.
 PERIOD_ORDER = [p.value for p in FrequencyPeriod]
@@ -72,25 +70,11 @@ def calculate_habit_streak(habit_id: int, db: Session) -> int:
     if badge is None:
         return 0
 
-    # Query preparation
-    query = db.query(Entries).filter(Entries.metric_id == badge.metric_id)
-
-    # Threshold comparison
-    if badge.threshold_value is not None:
-        if badge.higher_is_better:
-            query = query.filter(Entries.value >= badge.threshold_value)
-        else:
-            query = query.filter(Entries.value <= badge.threshold_value)
-
-    # Query itself
-    entries = query.all()
-
-    # Group entries by period
-    counts = defaultdict(int)
-
-    for entry in entries:
-        key = get_period(entry.date, badge.frequency_period)
-        counts[key] += 1
+    # Counts the number of entries within a period
+    counts = count_entries_by_period(
+        db, badge.metric_id, badge.frequency_period,
+        badge.threshold_value, badge.higher_is_better
+        )
 
     # Streak calculation, walking backwards period by period
     streak = 0

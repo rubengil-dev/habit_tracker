@@ -1,12 +1,17 @@
-from enums import Tier
 from datetime import date, timedelta
-from models import Badges
+from collections import defaultdict
+from sqlalchemy.orm import Session
+from enums import Tier
+from models import Badges, Entries
 
 def check_tier(badge: Badges, value: float) -> str:
     """Compares a value against a badge's thresholds and returns the matching tier."""
 
+    # Consistency and Objective tiers are counts, always ascending regardless of higher_is_better
+    ascending = badge.higher_is_better or badge.metric_type in ("consistency", "objective")
+
     # Logic for when a higher value is better
-    if badge.higher_is_better:
+    if ascending:
         if value < badge.unlocked:
             return Tier.LOCKED
         elif value >= badge.diamond:
@@ -34,7 +39,27 @@ def check_tier(badge: Badges, value: float) -> str:
             return Tier.BRONZE
         else:
             return Tier.UNLOCKED
-    
+
+def count_entries_by_period(db: Session, metric_id: int, frequency_period: str,
+                             threshold_value: float | None = None,
+                             higher_is_better: bool = True) -> dict[str, int]:
+    """Counts entries per period for a metric, applying threshold filter if set."""
+
+    query = db.query(Entries.date).filter(Entries.metric_id == metric_id)
+
+    if threshold_value is not None:
+        if higher_is_better:
+            query = query.filter(Entries.value >= threshold_value)
+        else:
+            query = query.filter(Entries.value <= threshold_value)
+
+    counts = defaultdict(int)
+    for (entry_date,) in query.all():
+        key = get_period(entry_date, frequency_period)
+        counts[key] += 1
+
+    return counts
+
 def get_period(entry_date: date, frequency_period: str) -> tuple:
     """Converts a date into a group key according to the given frequency_period,
     so entries falling in the same natural period share the same key."""

@@ -5,8 +5,7 @@ This page contains the necessary functions to re-calcule de badge's progress bas
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from models import Badges, Entries
-from services.utils import check_tier, get_period
-from collections import defaultdict
+from services.utils import check_tier, count_entries_by_period
 
 def calculation_router(db: Session, badge: Badges) -> tuple[float, str]:
     """Dispatches to the right calculation function based on the badge's metric_type."""
@@ -95,20 +94,11 @@ def calculate_consistency(db: Session, badge: Badges) -> tuple[float, str]:
     """Counts how many periods (week/month/quarter/etc.) reached the badge's
     frequency_target, counting only entries that pass threshold_value (if set)."""
 
-    query = db.query(Entries.date).filter(Entries.metric_id == badge.metric_id)
-
-    if badge.threshold_value is not None:
-        if badge.higher_is_better:
-            query = query.filter(Entries.value >= badge.threshold_value)
-        else:
-            query = query.filter(Entries.value <= badge.threshold_value)
-
-    entries = query.all()
-    counts = defaultdict(int)
-
-    for (entry_date,) in entries:
-        key = get_period(entry_date, badge.frequency_period)
-        counts[key] += 1
+    # Calculates number of entries within a period
+    counts = count_entries_by_period(
+        db, badge.metric_id, badge.frequency_period,
+        badge.threshold_value, badge.higher_is_better
+    )
 
     value = sum(1 for count in counts.values() if count >= badge.frequency_target)
     tier = check_tier(badge, value)

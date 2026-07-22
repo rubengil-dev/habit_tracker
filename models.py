@@ -98,11 +98,19 @@ class Badges(Base):
     # Constraints
     __table_args__ = (
 
-        # Tiers must be ordered ASC or DESC based on higer_is_better
+        # Tiers must follow one of the following rules:
         CheckConstraint(
-            "(higher_is_better = 1 AND 0 < unlocked AND unlocked < bronze AND bronze < silver AND silver < gold AND gold < diamond) "
+
+            # Consistency and Objective are always Higher Is Better, tho tiers are always ASC
+            "(metric_type IN ('consistency', 'objective') AND 0 < unlocked AND unlocked < bronze AND bronze < silver AND silver < gold AND gold < diamond) "
             "OR "
-            "(higher_is_better = 0 AND unlocked > bronze AND bronze > silver AND silver > gold AND gold > diamond AND diamond > 0)",
+
+            # Historic and Top can be Higher is Better, tho tiers are ASC
+            "(metric_type NOT IN ('consistency', 'objective') AND higher_is_better = 1 AND 0 < unlocked AND unlocked < bronze AND bronze < silver AND silver < gold AND gold < diamond) "
+            "OR "
+
+            # Or they can be Higher is NOT Better, tho tiers are DESC
+            "(metric_type NOT IN ('consistency', 'objective') AND higher_is_better = 0 AND unlocked > bronze AND bronze > silver AND silver > gold AND gold > diamond AND diamond > 0)",
             name="tiers_check"
         ),
 

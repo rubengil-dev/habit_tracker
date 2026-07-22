@@ -86,6 +86,7 @@ def create_badge(data: BadgeCreate, db: Session = Depends(get_db)):
     db.refresh(new_badge)
 
     recalculate_badges(db, new_badge.metric_id)
+    db.refresh(new_badge)
     return new_badge
 
 # UPDATE BADGE
@@ -140,6 +141,7 @@ def update_badge(id: int, data: BadgeUpdate, db: Session = Depends(get_db)):
     for metric_id in metric_ids:
         recalculate_badges(db, metric_id)
 
+    db.refresh(badge)
     return badge
 
 # DELETE BADGE

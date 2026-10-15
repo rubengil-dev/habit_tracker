@@ -5,4 +5,3 @@ __pycache*
 *.db
 *.sqlite3
 *.sqlite
-*claude*

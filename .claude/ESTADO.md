@@ -6,7 +6,7 @@
 ## Próxima sesión
 1. **Entrevista de diseño.** Hace meses que no toco la app y no recuerdo bien qué decidí. Recorrer qué quiero que sea la app y rellenar los huecos de los archivos de `.claude/` (marcados como "por definir" y "por recuperar"). Revisar las decisiones de `DECISIONES.md` y proponer mejoras: la implementación ya no depende de mi capacidad.
 2. **Entorno.** Recrear `.venv`, que está roto, y hacer la ruta de la BBDD independiente de la carpeta de arranque (detalle en "Entorno").
-3. **Git.** Commitear el trabajo pendiente (ver "Git") junto con el arreglo del bug 1.
+3. **Git.** Hacer push y confirmar el borrado de `README.md` (ver "Git").
 4. **Corregir los bugs confirmados y las mejoras menores**, ya alineados con lo decidido en la entrevista.
 
 ## Fases
@@ -50,9 +50,8 @@ Todos verificados en ejecución el 15 oct 2026.
 - La ruta de la BBDD es relativa a la carpeta desde la que se arranca: arrancar desde otra crea una BBDD vacía sin avisar. Hacerla relativa al proyecto y que se pueda cambiar para las pruebas.
 
 ## Git
-- Sin commitear desde el 24 jul: los schemas de respuesta en los cuatro routers.
-- `README.md` aparece como borrado, pero estaba vacío: confirmar el borrado en el mismo commit.
-- Sin commitear (20 oct 2026): la reorganización de `CLAUDE.md`, `CONTEXTO.md` y `ESTADO.md` en `.claude/`, y los comentarios, docstrings e imports de todo el código, ajustados a `ESTILO.md` sin tocar la lógica.
+- Commiteado en local, sin push: todo lo anterior a esta sesión.
+- `README.md` aparece como borrado, pero estaba vacío: confirmar el borrado en el siguiente commit.
 
 ## Pendiente para más adelante
 

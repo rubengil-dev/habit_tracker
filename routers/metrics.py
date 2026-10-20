@@ -1,105 +1,111 @@
+"""
+Metrics endpoints: CRUD.
+"""
+
+# Imports
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+
 from database import get_db
 from models import Metrics, Habits
-from schemas import MetricCreate, MetricUpdate
+from schemas import MetricCreate, MetricUpdate, MetricResponse
 
 router = APIRouter()
 
-# GET ALL METRICS
-@router.get("/metrics", status_code=200)
-def list_metrics(db: Session = Depends(get_db)):
-    """Returns every single metric created."""
 
-    # Query itself
+@router.get("/metrics", status_code=200, response_model=list[MetricResponse])
+def list_metrics(db: Session = Depends(get_db)):
+    """Returns every metric."""
+
+    # Query
     return db.query(Metrics).all()
 
-# GET ALL METRICS FROM ONE HABIT
-@router.get("/habits/{habit_id}/metrics", status_code=200)
-def list_metrics_related(habit_id: int, db: Session = Depends(get_db)):
-    """Returns every single metric created for a concrete habit."""
 
-    # Habit existence check
+@router.get("/habits/{habit_id}/metrics", status_code=200, response_model=list[MetricResponse])
+def list_metrics_related(habit_id: int, db: Session = Depends(get_db)):
+    """Returns every metric of a habit."""
+
+    # Habit check
     habit = db.query(Habits).filter(Habits.id == habit_id).first()
 
     if habit is None:
         raise HTTPException(status_code=404, detail=f"Habit #{habit_id} not found")
-    
-    # Query itself
+
+    # Query
     return db.query(Metrics).filter(Metrics.habit_id == habit_id).all()
 
-# GET ONE METRIC
-@router.get("/metrics/{id}", status_code=200)
-def get_metric(id: int, db: Session = Depends(get_db)):
-    """Returns only one metric."""
 
-    # Query itself
+@router.get("/metrics/{id}", status_code=200, response_model=MetricResponse)
+def get_metric(id: int, db: Session = Depends(get_db)):
+    """Returns one metric."""
+
+    # Query
     metric = db.query(Metrics).filter(Metrics.id == id).first()
 
-    # Error managing if metric doesnt exists
+    # Existence check
     if metric is None:
         raise HTTPException(status_code=404, detail="Metric not found")
     return metric
 
-# CREATE METRIC
-@router.post("/metrics", status_code=201)
-def create_metric(data: MetricCreate, db: Session = Depends(get_db)):
-    """Creates a new metric."""
 
-    # Habit existence check
+@router.post("/metrics", status_code=201, response_model=MetricResponse)
+def create_metric(data: MetricCreate, db: Session = Depends(get_db)):
+    """Creates a metric."""
+
+    # Habit check
     habit = db.query(Habits).filter(Habits.id == data.habit_id).first()
 
     if habit is None:
         raise HTTPException(status_code=404, detail=f"Habit #{data.habit_id} not found")
-    
-    # Metric creation
+
+    # Create
     new_metric = Metrics(
         habit_id=data.habit_id,
         metric=data.metric,
         unit=data.unit,
         calculated=data.calculated,
         formula=data.formula
-    )   
+    )
 
-    # DataBase updates
+    # Save
     db.add(new_metric)
     db.commit()
     db.refresh(new_metric)
     return new_metric
 
-# UPDATE METRICS
-@router.patch("/metrics/{id}", status_code=200)
-def update_metric(id: int, data: MetricUpdate, db: Session = Depends(get_db)):
-    """Updates an existing metric using a loop (model_dump)."""
 
-    # Query itself
+@router.patch("/metrics/{id}", status_code=200, response_model=MetricResponse)
+def update_metric(id: int, data: MetricUpdate, db: Session = Depends(get_db)):
+    """Updates a metric."""
+
+    # Query
     metric = db.query(Metrics).filter(Metrics.id == id).first()
 
-    # Error managing if metric doesnt exists
+    # Existence check
     if metric is None:
         raise HTTPException(status_code=404, detail="Metric not found")
-    
-    # Update itself
+
+    # Update
     for key, value in data.model_dump(exclude_unset=True).items():
         setattr(metric, key, value)
 
-    # DataBase update
+    # Save
     db.commit()
     db.refresh(metric)
     return metric
 
-# DELETE METRIC
+
 @router.delete("/metrics/{id}", status_code=204)
 def delete_metric(id: int, db: Session = Depends(get_db)):
-    """Deletes an existing metric."""
+    """Deletes a metric and its entries and badges."""
 
-    # Query itself
+    # Query
     metric = db.query(Metrics).filter(Metrics.id == id).first()
 
-    # Error managing if metric doesnt exists
+    # Existence check
     if metric is None:
         raise HTTPException(status_code=404, detail="Metric not found")
-    
-    # DataBase update
+
+    # Save
     db.delete(metric)
     db.commit()

@@ -1,16 +1,26 @@
+"""
+Domain-blind helpers:
+    - Tier lookup
+    - Natural calendar periods
+    - Entries count per period
+"""
+
+# Imports
 from datetime import date, timedelta
 from collections import defaultdict
 from sqlalchemy.orm import Session
+
 from enums import Tier
 from models import Badges, Entries
 
-def check_tier(badge: Badges, value: float) -> str:
-    """Compares a value against a badge's thresholds and returns the matching tier."""
 
-    # Consistency and Objective tiers are counts, always ascending regardless of higher_is_better
+def check_tier(badge: Badges, value: float) -> str:
+    """Tier finder: compares a value against the badge's thresholds."""
+
+    # Counts (consistency, objective) are always ascending
     ascending = badge.higher_is_better or badge.metric_type in ("consistency", "objective")
 
-    # Logic for when a higher value is better
+    # Ascending tiers
     if ascending:
         if value < badge.unlocked:
             return Tier.LOCKED
@@ -24,8 +34,8 @@ def check_tier(badge: Badges, value: float) -> str:
             return Tier.BRONZE
         else:
             return Tier.UNLOCKED
-    
-    # Logic for when a lower value is better
+
+    # Descending tiers
     else:
         if value > badge.unlocked:
             return Tier.LOCKED
@@ -43,16 +53,19 @@ def check_tier(badge: Badges, value: float) -> str:
 def count_entries_by_period(db: Session, metric_id: int, frequency_period: str,
                              threshold_value: float | None = None,
                              higher_is_better: bool = True) -> dict[str, int]:
-    """Counts entries per period for a metric, applying threshold filter if set."""
+    """Entries counter per period, applying the threshold filter if set."""
 
+    # Query
     query = db.query(Entries.date).filter(Entries.metric_id == metric_id)
 
+    # Threshold filter
     if threshold_value is not None:
         if higher_is_better:
             query = query.filter(Entries.value >= threshold_value)
         else:
             query = query.filter(Entries.value <= threshold_value)
 
+    # Count
     counts = defaultdict(int)
     for (entry_date,) in query.all():
         key = get_period(entry_date, frequency_period)
@@ -61,8 +74,7 @@ def count_entries_by_period(db: Session, metric_id: int, frequency_period: str,
     return counts
 
 def get_period(entry_date: date, frequency_period: str) -> tuple:
-    """Converts a date into a group key according to the given frequency_period,
-    so entries falling in the same natural period share the same key."""
+    """Period key finder: date → key of its natural period."""
 
     if frequency_period == "daily":
         return (entry_date.year, entry_date.month, entry_date.day)
@@ -81,11 +93,9 @@ def get_period(entry_date: date, frequency_period: str) -> tuple:
         return (entry_date.year,)
     else:
         raise ValueError(f"Unknown frequency_period: {frequency_period}")
-    
+
 def get_previous_period(cursor_date: date, frequency_period: str) -> date:
-    """Returns a date that falls inside the period immediately before the one
-    containing cursor_date. Meant to be chained with get_period to walk backwards
-    period by period (used by the habit streak calculation)."""
+    """Previous period finder: date → a date inside the period before its own."""
 
     if frequency_period == "daily":
         return cursor_date - timedelta(days=1)
@@ -113,15 +123,14 @@ def get_previous_period(cursor_date: date, frequency_period: str) -> date:
 
     else:
         raise ValueError(f"Unknown frequency_period: {frequency_period}")
-    
-def get_period_bounds(cursor_date: date, frequency_period: str) -> tuple[date, date]:
-    """Returns (start_date, end_date) of the natural period containing cursor_date.
-    Built entirely on top of get_previous_period to save code and possible errors."""
 
-    # DAY1 of this period
+def get_period_bounds(cursor_date: date, frequency_period: str) -> tuple[date, date]:
+    """Period bounds finder: date → (first day, last day) of its natural period."""
+
+    # Start
     start = get_previous_period(cursor_date, frequency_period) + timedelta(days=1)
 
-    # LAST DAY of this period
+    # End
     end = start
     while get_period(end + timedelta(days=1), frequency_period) == get_period(start, frequency_period):
         end += timedelta(days=1)

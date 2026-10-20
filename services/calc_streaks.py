@@ -1,34 +1,37 @@
 """
-This page contains the functions necessary to calcule streaks to show them on front.
+Streaks and progress:
+    - Progress of a consistency badge in the current period
+    - Streak of a habit
 """
 
+# Imports
 from datetime import date
 from sqlalchemy import func
 from sqlalchemy.orm import Session
+
+from enums import FrequencyPeriod
 from models import Badges, Entries
 from services.utils import get_period, get_previous_period, get_period_bounds, count_entries_by_period
-from enums import FrequencyPeriod
 
-# Constant: Periods and their orders.
+# Period order: shortest first, as declared in FrequencyPeriod
 PERIOD_ORDER = [p.value for p in FrequencyPeriod]
 
-# ------------------------- BADGES ------------------------- #
+# Badges
 
 def current_badge_progress(badge: Badges, db: Session) -> tuple[int, int]:
-    """Returns (current, target) progress for a consistency badge's CURRENT period.
-       This is the functions that calcules the streak within a badge's period to display it."""
+    """Progress of a consistency badge in the current period → (current, target)."""
 
-    # Get current period date bounds
+    # Current period
     start, end = get_period_bounds(date.today(), badge.frequency_period)
 
-    # Query preparation
+    # Query
     query = db.query(func.count(Entries.id)).filter(
     Entries.metric_id == badge.metric_id,
     Entries.date >= start,
     Entries.date <= end
     )
 
-    # Threshold comparison to complete query
+    # Threshold filter
     if badge.threshold_value is not None:
 
         if badge.higher_is_better:
@@ -36,47 +39,50 @@ def current_badge_progress(badge: Badges, db: Session) -> tuple[int, int]:
         else:
             query = query.filter(Entries.value <= badge.threshold_value)
 
-    # Query itself
+    # Count
     count = query.scalar() or 0
 
     return (count, badge.frequency_target)
 
-# ------------------------- HABITS ------------------------- #
+# Habits
 
 def get_active_consistency_badge(habit_id: int, db: Session) -> Badges | None:
-    """Returns the consistency badge that drives the habit's streak indicator.
-    Picks the badge with the shortest frequency_period; ties are broken by
-    the highest frequency_target (the more demanding badge wins)."""
+    """
+    Active consistency badge finder:
+        - Shortest frequency_period wins
+        - Ties: highest frequency_target wins
+    """
 
-    # Query itself
+    # Query
     badges = db.query(Badges).filter(Badges.habit_id == habit_id, Badges.metric_type == "consistency").all()
 
-    # Badges existence check
+    # Existence check
     if not badges:
         return None
 
-    # Tie-break: Tuples comparison is made firstly, by first element, if still tie, then looks the second one:
-    # So, first, tuples are compared for MIN f_period. If still tie, then are compared for MAX (-)f_target.
+    # Tuples compare element by element: shortest period first, then highest target (negated)
     return min(badges,key=lambda b: (PERIOD_ORDER.index(b.frequency_period), -b.frequency_target))
 
 def calculate_habit_streak(habit_id: int, db: Session) -> int:
-    """Calculates the CURRENT streak of consecutive fulfilled periods for a habit,
-    based on its active consistency badge. The current period counts immediately if already fulfilled,
-    but never breaks the streak if not yet fulfilled — only closed periods can break it."""
+    """
+    Current streak of a habit, from its active consistency badge:
+        - Counts consecutive fulfilled periods, backwards from the current one
+        - Current period counts if fulfilled, but never breaks the streak
+    """
 
-    # ActiveBadge existence check
+    # Active badge check
     badge = get_active_consistency_badge(habit_id, db)
 
     if badge is None:
         return 0
 
-    # Counts the number of entries within a period
+    # Entries per period
     counts = count_entries_by_period(
         db, badge.metric_id, badge.frequency_period,
         badge.threshold_value, badge.higher_is_better
         )
 
-    # Streak calculation, walking backwards period by period
+    # Walk backwards
     streak = 0
     cursor = date.today()
     first_period = True
@@ -85,16 +91,14 @@ def calculate_habit_streak(habit_id: int, db: Session) -> int:
         key = get_period(cursor, badge.frequency_period)
         fulfilled = counts[key] >= badge.frequency_target
 
-        # Sum 1 if CURRENT period is already fulfilled
+        # Current period: counts if fulfilled, otherwise skipped
         if first_period:
             first_period = False
 
             if fulfilled:
                 streak += 1
-            
-            # If not fulfilled yet, skip (no break, no sum)
 
-        # Sum 1 if PREVIOUS period is already fulfilled, breaks if not
+        # Previous periods: count if fulfilled, otherwise break
         else:
             if fulfilled:
                 streak += 1

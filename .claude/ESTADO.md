@@ -6,8 +6,7 @@
 ## Próxima sesión
 1. **Entrevista de diseño.** Hace meses que no toco la app y no recuerdo bien qué decidí. Recorrer qué quiero que sea la app y rellenar los huecos de los archivos de `.claude/` (marcados como "por definir" y "por recuperar"). Revisar las decisiones de `DECISIONES.md` y proponer mejoras: la implementación ya no depende de mi capacidad.
 2. **Entorno.** Recrear `.venv`, que está roto, y hacer la ruta de la BBDD independiente de la carpeta de arranque (detalle en "Entorno").
-3. **Git.** Hacer push y confirmar el borrado de `README.md` (ver "Git").
-4. **Corregir los bugs confirmados y las mejoras menores**, ya alineados con lo decidido en la entrevista.
+3. **Corregir los bugs confirmados y las mejoras menores**, ya alineados con lo decidido en la entrevista.
 
 ## Fases
 - [x] Backend: CRUD de las cuatro entidades, los cuatro tipos de medalla, recálculo síncrono, rachas y cascada.
@@ -48,10 +47,6 @@ Todos verificados en ejecución el 15 oct 2026.
 ## Entorno
 - `.venv` está roto desde que se movió la carpeta: lo creó Python 3.14 y sus ejecutables apuntan a la ruta antigua `developer\habit_tracker`. Mientras tanto, `python -m uvicorn` funciona.
 - La ruta de la BBDD es relativa a la carpeta desde la que se arranca: arrancar desde otra crea una BBDD vacía sin avisar. Hacerla relativa al proyecto y que se pueda cambiar para las pruebas.
-
-## Git
-- Commiteado en local, sin push: todo lo anterior a esta sesión.
-- `README.md` aparece como borrado, pero estaba vacío: confirmar el borrado en el siguiente commit.
 
 ## Pendiente para más adelante
 

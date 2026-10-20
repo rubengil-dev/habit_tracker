@@ -7,7 +7,8 @@
 - `CLAUDE.md`, `CONTEXTO.md` y `ESTADO.md` pasan a 8 archivos dentro de `.claude/` (CLAUDE, PAUTAS, CONTEXTO, ESTADO, ESTILO, TECNICO, DECISIONES, HISTORICO), con la estructura usada en el proyecto del TFM. Quedan huecos marcados para la entrevista de la próxima sesión.
 - Comentarios, docstrings e imports de todo el código ajustados a `ESTILO.md`, sin cambios de lógica.
 - Los schemas de respuesta, pendientes desde julio, entran en el mismo commit que el código, con el bug 1 aún sin arreglar.
-- Commits: `cf4d93b` (archivos de Claude), `a3fb890` (código).
+- `README.md`, vacío, borrado.
+- Commits: `cf4d93b` (archivos de Claude), `a3fb890` (código), `ad96b45` (histórico y estado). El commit de cierre, que borra el README y guarda esta entrada, no puede llevar su propio hash: es el último de `git log`.
 
 ## 2026-10-15: revisión integral y CLAUDE.md
 - Revisión completa del código: bugs confirmados en ejecución y mejoras menores, anotados en ESTADO.

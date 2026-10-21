@@ -5,7 +5,7 @@
 
 ## Próxima sesión
 La entrevista de diseño está hecha (21 oct 2026), salvo el bloque 5 (vistas y diseño visual), que se hace al empezar el frontend. Lo decidido está en `CONTEXTO.md` y `DECISIONES.md`.
-1. **Montar el entorno del rediseño.**
+1. **Montar el entorno del rediseño.** Arrancar por aquí para no perder tiempo después: es un side project con tiempo reducido y la meta es ir lo más rápido posible.
    - Elegir la versión de Python según lo que soporte Vercel (tengo instaladas la 3.11 y la 3.14; uv descarga la que haga falta).
    - Que Claude me enseñe uv con los comandos exactos, por si lo aplico en otros proyectos.
    - Verificar las condiciones de los planes gratuitos de Vercel y Neon. Las cuentas las creo yo; Claude no las crea.
@@ -13,7 +13,7 @@ La entrevista de diseño está hecha (21 oct 2026), salvo el bloque 5 (vistas y 
 3. **Entrevista de front** (bloque 5) cuando toque empezar el frontend.
 
 ## Fases
-Meta: usable lo antes posible y, como muy tarde, el 1 ene 2027. Falta estimar plazos, que dependen de cuántas sesiones por semana pueda dedicar.
+Meta: usable lo antes posible y, como muy tarde, el 1 ene 2027. Es un side project con tiempo reducido: no hay estimación de plazos, se avanza lo más rápido posible.
 - [x] Backend v1: CRUD de las cuatro entidades, los cuatro tipos de medalla, recálculo síncrono, rachas y cascada.
 - [x] Entrevista de diseño, salvo el bloque 5.
 - [ ] Rediseño del backend según la entrevista.

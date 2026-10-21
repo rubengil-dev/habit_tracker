@@ -8,7 +8,7 @@
 - `CONTEXTO.md`: nuevo porqué del proyecto (registrar tiene que ser gratificante), MVP solo para mí con puerta abierta a más usuarios, modelo por sesiones con etiquetas y calculada de ritmo, medallas colgadas del hábito (con modo evitar y filtro por etiqueta), objetivo y fecha de inicio del hábito, mejor racha, y alcance del MVP.
 - `DECISIONES.md`: despliegue en Vercel con Postgres en Neon, login propio, uv, Alembic y pytest, UUID, sesiones, calculadas guardadas, racha a partir del objetivo del hábito, fechas y zona horaria, no mover entre hábitos y borrado de etiquetas. Sustituyen a la fórmula de texto, a la medalla colgada de la métrica y a la regla de "medalla de constancia obligatoria".
 - `ESTADO.md`: próxima sesión (entorno, rediseño del backend, entrevista de front), bugs de la v1 mapeados a lo que los resuelve y decisiones abiertas reordenadas. `PAUTAS.md`: en cambios grandes se lista punto a punto qué se borra y qué se crea.
-- Commits: `2416be4` (bloques 1 a 3), `178bbfe` (bloque 4), `1be4ac7` (bloques 6 y 7, cierre de la entrevista y push). El commit de cierre, que guarda esta entrada, no puede llevar su propio hash: es el último de `git log`.
+- Commits: `2416be4` (bloques 1 a 3), `178bbfe` (bloque 4), `1be4ac7` (bloques 6 y 7, cierre de la entrevista y push). Los commits posteriores (esta entrada y un retoque de `ESTADO.md`) no pueden llevar su propio hash: son los últimos de `git log`.
 
 ## 2026-10-20: archivos de Claude en 8
 - `CLAUDE.md`, `CONTEXTO.md` y `ESTADO.md` pasan a 8 archivos dentro de `.claude/` (CLAUDE, PAUTAS, CONTEXTO, ESTADO, ESTILO, TECNICO, DECISIONES, HISTORICO), con la estructura usada en el proyecto del TFM. Quedan huecos marcados para la entrevista de la próxima sesión.

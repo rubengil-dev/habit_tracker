@@ -22,6 +22,7 @@ Un habit tracker personal donde los hábitos se convierten en medallas que suben
 ### Cómo se organiza lo que registro
 - Un **hábito** tiene cero, una o varias **métricas** (p. ej. correr: distancia, tiempo y ritmo).
 - Cada vez que hago un hábito registro una **sesión** con su fecha. Varias sesiones el mismo día cuentan por separado: dos carreras son dos sesiones.
+- La fecha de la sesión la elijo yo: por defecto hoy, pero puedo poner ayer para apuntar tarde sin romper la racha. No se pueden registrar sesiones futuras. El día se cierra según mi zona horaria (por defecto, Europe/Madrid).
 - Dentro de la sesión relleno los **valores** de sus métricas, todos opcionales. Una sesión sin valores es un simple "lo he hecho": así funcionan los hábitos de sí/no (gimnasio, crochet).
 - Las métricas son de **número** (km, páginas) o de **duración** (se introduce con un selector de minutos y segundos).
 - Una métrica puede ser **calculada** a partir de otras dos del mismo hábito, según un tipo predefinido. De momento hay uno solo, el **ritmo** (A ÷ B: ritmo de carrera, velocidad lectora...). No se rellena a mano, queda vacía si falta alguno de los dos datos y, al crearla en un hábito con historia, se calcula para todas sus sesiones anteriores.
@@ -56,7 +57,8 @@ La app es para trackear de forma satisfactoria, no para engañarme: no hay comod
   - **Registro diario:** lista todos los hábitos activos con su estado (hechos, pendientes y, en los de evitar, algo como "7 días limpios"), para que no se me olvide ninguno aunque lleve días sin registrarlo. No registrar también es registrar.
   - **Medallas:** filtrable, con las medallas como círculos con una barra de progreso animada que cambia de color al subir de nivel.
 - Los días sin sesión se ven vacíos en el historial, como una casilla sin marcar.
-- Borrar un hábito o una métrica arrastra todo lo que cuelga de él, así que el borrado pide confirmación proporcional a lo que se pierde: el hábito, escribiendo su nombre exacto; la métrica, con un aviso simple; la medalla, sin aviso.
+- Borrar un hábito o una métrica arrastra todo lo que cuelga de él, así que el borrado pide confirmación proporcional a lo que se pierde: el hábito, escribiendo su nombre exacto; la métrica, con un aviso simple; la medalla, sin aviso. La etiqueta se quita de las sesiones; si la usan medallas, el aviso dice cuáles se perderían con ella y pide escribir el nombre exacto de la etiqueta.
+- No se puede mover una métrica ni una sesión a otro hábito: se borra y se crea de nuevo.
 - Puedo exportar todos mis datos a un archivo, como copia de seguridad.
 - Se usa desde el móvil (sobre todo Android; en iPhone también funciona, instalándola desde Safari) y desde el portátil.
 
@@ -68,8 +70,13 @@ Por definir; el detalle de las dos vistas queda pendiente hasta hacer el fronten
 2. **Frontend:** una app web instalable que consume esa API. No sé frontend, así que lo construye Claude.
 3. **Despliegue:** entra en el MVP, porque registrar desde el móvil es lo que hace que apuntar cueste poco.
 
+## Alcance del MVP
+Todo lo descrito en "El producto" (sesiones, métricas de número y duración con el ritmo como calculada, etiquetas, los cuatro tipos de medalla con modo evitar, umbrales sugeridos, objetivo, racha y mejor racha), más el login, el despliegue, el uso desde el móvil como web instalable, exportar los datos y las dos vistas con su retroalimentación visual. Lo demás está en la visión futura.
+
 ## Visión futura
 - Fase 2: abrir la app a más usuarios (ver "Para quién").
+- Login con Google, más cómodo que usuario y contraseña.
+- Medallas de racha ("30 días seguidos") y un nivel global de jugador que sume todas mis medallas.
 - Estadísticas avanzadas y detalladas, filtrables por etiquetas.
 - Importar datos desde un archivo: para pasar de una copia propia a la app central y para traer el histórico de Notion (un día por página y un checkbox por hábito; cada casilla marcada sería una sesión sin valores). Opcional.
 - Creación de hábitos asistida por IA. Es utópico y no debe condicionar el desarrollo actual.

@@ -10,16 +10,24 @@ Varias decisiones de la entrevista de diseño (21 oct 2026) cambian el modelo y 
 ## Stack
 
 ### ¿Se conserva el código actual?
-- **Decisión:** es el punto de partida, pero se puede reestructurar entero. Se conserva el diseño de la lógica de medallas y rachas. Cualquier reestructuración se presenta antes de hacerla, explicando qué cambia respecto a lo que hay.
-- **Por qué:** sus límites venían de lo que yo sabía hacer cuando empecé; ahora lo programa Claude. La lógica de medallas y rachas es lo más valioso y ya está probada.
+- **Decisión:** es el punto de partida, no una obligación. Se reutiliza lo que sirve, para no gastar tokens en rehacerlo; lo demás (cálculos, manejador de errores, códigos de respuesta, funciones heredadas que no entiendo) se puede cambiar, simplificar u optimizar. El rediseño va en rama aparte y, antes de ejecutarlo, se lista punto a punto qué se borra y qué se crea.
+- **Por qué:** los límites venían de lo que yo sabía hacer; ahora lo programa Claude. Parte del código lo escribió una IA gratuita y ya no lo entiendo. La lista punto a punto me da el control y, si algo se rompe, permite volver a ver qué se tocó (`HISTORICO.md`). La lógica de medallas y rachas es lo más probado, buen candidato a portar.
 
 ### ¿Qué base de datos?
-- **Decisión:** una base de datos gestionada en la nube, no un archivo SQLite en el servidor. Cuál, abierto en `ESTADO.md`. La BBDD actual es de prueba y se puede borrar: no hay nada que migrar.
-- **Por qué:** los hostings gratuitos no conservan el disco, así que un archivo SQLite perdería los datos al desplegar.
+- **Decisión:** Postgres gestionado en Neon, no un archivo SQLite en el servidor. La BBDD actual es de prueba y se puede borrar: no hay nada que migrar.
+- **Por qué:** los hostings gratuitos no conservan el disco, así que un archivo SQLite perdería los datos al desplegar. Neon es gratuito y de sobra para un usuario, se duerme solo sin uso y despierta al conectarse, sin las pausas manuales de Supabase.
 
 ### ¿App nativa o web instalable?
 - **Decisión:** web instalable. Se prueba sobre Android.
 - **Por qué:** una sola app para móvil y portátil, que funciona también en iPhone, sin pasar por tiendas de apps.
+
+### ¿Dónde se despliega?
+- **Decisión:** el backend FastAPI como funciones serverless en Vercel y el frontend en el mismo proyecto de Vercel, con la base de datos en Neon. Sin CORS, porque front y API comparten dirección.
+- **Por qué:** coste 0 y sin servidor que gestionar. El arranque en frío (alrededor de un segundo) es asumible, y las animaciones no esperan al servidor: el front celebra al instante y confirma por detrás. Descartados: Render en gratuito (se duerme a los 15 minutos y tarda alrededor de un minuto en despertar), Supabase como backend completo (obligaría a reescribir la lógica de medallas en SQL y pausa el proyecto tras una semana sin uso) y todo en JavaScript (se perdería la lógica en Python). Antes de crear las cuentas hay que verificar las condiciones de los planes gratuitos: el de Vercel es solo para uso personal no comercial.
+
+### ¿Con qué herramientas se gestiona el backend?
+- **Decisión:** uv para Python y dependencias, Alembic para las migraciones de la BBDD y pytest para los tests de medallas y rachas. La configuración (dirección de la BBDD, clave de las sesiones) va en variables de entorno, nunca en el código: un `.env` local ignorado por git y la configuración de Vercel en producción. La versión de Python se decide al montar el entorno, según lo que soporte Vercel.
+- **Por qué:** uv recrea el entorno con un comando y fija versiones exactas, lo que evita casos como el `.venv` roto. Alembic permite cambiar tablas sin borrar datos reales. pytest evita probar a mano con `curl` los casos que ya fallaron (menos es mejor, periodos semanales, modo evitar).
 
 ### ¿Hábitos y medallas fijos en el código o configurables?
 - **Decisión:** el modelo de datos es data-driven: ningún hábito, métrica ni medalla está prefijado.
@@ -28,8 +36,8 @@ Varias decisiones de la entrevista de diseño (21 oct 2026) cambian el modelo y 
 ## Usuarios e identificadores
 
 ### ¿Hay login y usuarios?
-- **Decisión:** el MVP tiene login con un sistema que admite varios usuarios, pero con el registro cerrado y solo mi cuenta. Cada hábito guarda su dueño desde el principio.
-- **Por qué:** una API desplegada es pública y necesita login igualmente. Hacerlo multiusuario desde el principio cuesta casi lo mismo y deja abierta la fase 2 sin migraciones con datos reales.
+- **Decisión:** el MVP tiene un login propio, dentro de FastAPI, que admite varios usuarios pero con el registro cerrado y solo mi cuenta. Contraseña cifrada, sesión de un año que se renueva sola al entrar (no se vuelve a pedir el login) y límite de intentos. Cada hábito guarda su dueño desde el principio. El login con Google se añade en una iteración posterior.
+- **Por qué:** una API desplegada es pública y necesita login igualmente. Hacerlo multiusuario desde el principio cuesta casi lo mismo y deja abierta la fase 2 sin migraciones con datos reales. Un proveedor externo (Clerk, Google) aporta recuperación de contraseña y login social, que el MVP no necesita.
 
 ### ¿Cómo se identifica cada fila?
 - **Decisión:** con UUID, no con números correlativos.
@@ -80,6 +88,18 @@ Varias decisiones de la entrevista de diseño (21 oct 2026) cambian el modelo y 
 ### ¿Para qué sirve que un hábito esté activo?
 - **Decisión:** para filtrar en el panel visual y mostrar solo los activos sin borrar nada.
 - **Por qué:** conservar el historial de lo que ya no sigo.
+
+### ¿Qué fecha tiene una sesión y cuándo puede registrarse?
+- **Decisión:** la fecha es un día de calendario, sin hora, que elige el usuario (por defecto hoy). Puede ser pasada, no futura. "Hoy" y el cierre de cada periodo se calculan con la zona horaria del usuario, un ajuste suyo (columna en la tabla de usuarios) con Europe/Madrid por defecto.
+- **Por qué:** una sesión futura contaría para medallas y rachas antes de tiempo. El servidor de Vercel trabaja en UTC y, sin zona horaria, entre las 00:00 y las 02:00 en España creería que sigue siendo el día anterior. Apuntar de madrugada lo de ayer no rompe rachas porque se calculan al vuelo.
+
+### ¿Se puede mover una métrica o una sesión a otro hábito?
+- **Decisión:** no. Se borra y se crea de nuevo; de una sesión solo se editan su fecha y sus valores.
+- **Por qué:** una sesión lleva valores de las métricas de su hábito, que no tienen equivalente en otro. Evita datos incoherentes (bug 6 de `ESTADO.md`).
+
+### ¿Qué pasa al borrar una etiqueta?
+- **Decisión:** se quita de todas las sesiones. Si la usan medallas, borrarla también borra esas medallas, y el borrado exige antes mostrar cuáles son y confirmar escribiendo el nombre exacto de la etiqueta.
+- **Por qué:** una medalla con su filtro roto cambiaría de significado en silencio (contaría todas las sesiones). Es la misma confirmación proporcional que en el resto de borrados.
 
 ## Medallas y rachas
 

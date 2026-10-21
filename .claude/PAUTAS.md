@@ -20,6 +20,7 @@
 ## Cómo avanzamos
 - Quiero ir rápido: entender qué hace el código a grandes rasgos, no aprender a escribirlo. Lo que sí quiero aprender es a dirigir a la IA y a ver qué necesita un proyecto. Si quiero entender algo más a fondo, te lo pregunto.
 - Primero hablamos el tema hasta estar de acuerdo. Después lo implementas entero del tirón.
+- En cambios grandes (reestructuraciones, rediseños), antes de ejecutarlos lista punto a punto qué borras y qué creas, para tener el control y reflejarlo en `HISTORICO.md`. Del código existente conserva lo que sirva para no gastar tokens, pero cambia sin miedo lo que no sirva o se pueda hacer mejor.
 - Al terminar, resume como un dev junior a su jefe de proyecto: por cada archivo nuevo o cambiado, 2-4 líneas de qué hace y cómo se combinan sus funciones principales para dar el resultado. Sin código ni explicación línea a línea. Los docstrings, claros, para que también sirvan de resumen.
 - Cuando cambies archivos de `.claude/`, no me los copies en el chat: los reviso yo en el editor, que marca lo cambiado desde el último commit. Dime solo qué archivos has tocado y qué has cambiado, en pocas líneas. Cuando dé el OK a una revisión, commit, para que la siguiente ronda de cambios se vea limpia en el editor.
 - Si hay notebooks y código, los notebooks son independientes: no importan nada del código. Las funciones que comparten se duplican y, si cambian, se actualizan en los dos sitios.

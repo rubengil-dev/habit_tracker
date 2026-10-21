@@ -5,63 +5,87 @@
 
 Donde el porqué dice "por recuperar", la decisión consta pero su motivo no se apuntó: se completa en la entrevista.
 
+Varias decisiones de la entrevista de diseño (21 oct 2026) cambian el modelo y aún no están implementadas: el código actual sigue con registros sueltos por métrica, medallas colgadas de métricas y fórmulas de texto.
+
 ## Stack
 
-### ¿Qué backend y qué base de datos?
-- **Decisión:** Python + FastAPI + SQLAlchemy + SQLite.
-- **Por qué:** es un solo usuario y SQLite no requiere gestionar un servidor de base de datos.
+### ¿Se conserva el código actual?
+- **Decisión:** es el punto de partida, pero se puede reestructurar entero. Se conserva el diseño de la lógica de medallas y rachas. Cualquier reestructuración se presenta antes de hacerla, explicando qué cambia respecto a lo que hay.
+- **Por qué:** sus límites venían de lo que yo sabía hacer cuando empecé; ahora lo programa Claude. La lógica de medallas y rachas es lo más valioso y ya está probada.
+
+### ¿Qué base de datos?
+- **Decisión:** una base de datos gestionada en la nube, no un archivo SQLite en el servidor. Cuál, abierto en `ESTADO.md`. La BBDD actual es de prueba y se puede borrar: no hay nada que migrar.
+- **Por qué:** los hostings gratuitos no conservan el disco, así que un archivo SQLite perdería los datos al desplegar.
+
+### ¿App nativa o web instalable?
+- **Decisión:** web instalable. Se prueba sobre Android.
+- **Por qué:** una sola app para móvil y portátil, que funciona también en iPhone, sin pasar por tiendas de apps.
 
 ### ¿Hábitos y medallas fijos en el código o configurables?
 - **Decisión:** el modelo de datos es data-driven: ningún hábito, métrica ni medalla está prefijado.
-- **Por qué:** cualquier hábito se crea sin tocar código.
+- **Por qué:** cualquier hábito se crea sin tocar código, y cada usuario crea los suyos si la app se abre a más gente.
+
+## Usuarios e identificadores
+
+### ¿Hay login y usuarios?
+- **Decisión:** el MVP tiene login con un sistema que admite varios usuarios, pero con el registro cerrado y solo mi cuenta. Cada hábito guarda su dueño desde el principio.
+- **Por qué:** una API desplegada es pública y necesita login igualmente. Hacerlo multiusuario desde el principio cuesta casi lo mismo y deja abierta la fase 2 sin migraciones con datos reales.
+
+### ¿Cómo se identifica cada fila?
+- **Decisión:** con UUID, no con números correlativos.
+- **Por qué:** permite fusionar bases de datos distintas sin choques, p. ej. pasar de una copia propia a la app central con exportar e importar.
 
 ## Modelo de datos
 
+### ¿Cómo se registra un hábito?
+- **Decisión:** por sesiones (ver `CONTEXTO.md`), no con un registro suelto por métrica. Varias sesiones el mismo día son independientes.
+- **Por qué:** con registros sueltos, el tiempo y la distancia de una misma actividad no quedaban unidos, y con dos actividades el mismo día era imposible calcular bien el ritmo. Dos carreras son dos actividades distintas. Además, la sesión sin valores cubre los hábitos de sí/no sin un tipo de métrica aparte.
+
+### ¿Qué tipos de métrica hay y cómo se guarda la duración?
+- **Decisión:** número y duración. La duración se guarda en segundos; el front la introduce y la muestra como minutos y segundos.
+- **Por qué:** una sola columna, fácil de sumar y comparar.
+
+### ¿Cómo funcionan las métricas calculadas?
+- **Decisión:** se calculan al guardar la sesión y se guardan con ella. A y B no pueden ser calculadas. El valor se guarda en las unidades crudas (p. ej. km por segundo) y el front lo convierte al mostrarlo, igual que los segundos. De momento solo existe el tipo ritmo (A ÷ B).
+- **Por qué:** guardarlas permite verlas en cada sesión y usarlas en medallas; con sesiones, calcularlas al guardar es trivial, sin motor aparte. Se descartaron la fórmula de texto libre (difícil de interpretar con seguridad, validar y mostrar con unidades) y poder rellenarlas a mano a veces, que era lo que la complicaba. Que una calculada no use otra evita bucles. Los tipos porcentaje y producto se propusieron y no convencieron.
+
 ### ¿Qué pasa al borrar un hábito, una métrica o una medalla?
-- **Decisión:** todas las claves ajenas borran en cascada: borrar un hábito arrastra sus métricas, medallas y registros; borrar una métrica arrastra sus registros y medallas; borrar una medalla no arrastra nada.
+- **Decisión:** todo borra en cascada: borrar un hábito arrastra todo lo suyo (métricas, medallas y sesiones); borrar una métrica arrastra sus valores y las medallas que la usan; borrar una medalla no arrastra nada.
 - **Por qué:** no pueden quedar datos huérfanos.
 
-### ¿Una métrica alimenta una medalla o varias?
-- **Decisión:** varias. El recálculo busca todas las medallas de la métrica afectada.
-- **Por qué:** por recuperar.
+### ¿De qué cuelga una medalla?
+- **Decisión:** siempre del hábito. La métrica es opcional y depende del tipo (ver `CONTEXTO.md`).
+- **Por qué:** los hábitos sin métricas (gimnasio) también necesitan medallas, y una histórica de sesiones tiene sentido aunque el hábito tenga métricas. Se descartaron una métrica ficticia en todos los hábitos (mete ruido) y partir la histórica en dos tipos (duplica lógica).
 
-### ¿Cómo se representan los campos derivados (ritmo, etc.)?
-- **Decisión:** como una métrica más, marcada como calculada y con su fórmula. Sus registros los genera el sistema, no el usuario: se bloquearán el POST y el PATCH manuales de registros sobre ellas. La fórmula tendrá que ser un texto usable: mínimo dos métricas del mismo hábito y un operador (`+ - * /`).
-- **Por qué:** evita duplicar el registro (manual y calculado). Falta implementar el motor y los bloqueos (ver `ESTADO.md`).
+### ¿Una métrica alimenta una medalla o varias?
+- **Decisión:** varias. El recálculo busca todas las medallas afectadas.
+- **Por qué:** cada hábito es un reto visto desde varios ángulos; la misma métrica da medallas distintas (p. ej. distancia: histórica y objetivo).
 
 ### ¿Dónde viven el valor y el nivel actual de una medalla?
-- **Decisión:** se guardan en la propia medalla y solo los fija el servidor; no existen en los schemas de entrada. Se recalculan de forma síncrona al crear, modificar o borrar un registro y al crear o modificar una medalla (en este último caso, tanto la métrica antigua como la nueva si cambia). Nunca con un proceso programado.
+- **Decisión:** se guardan en la propia medalla y solo los fija el servidor; no existen en los schemas de entrada. Se recalculan de forma síncrona al crear, modificar o borrar una sesión y al crear o modificar una medalla. Nunca con un proceso programado.
 - **Por qué:** que un cliente no pueda fijar un nivel sin cumplirlo. El recálculo síncrono: por recuperar.
 
 ### ¿Se guarda la racha?
 - **Decisión:** no. La racha y el progreso actual de una medalla ("3/7") se calculan al vuelo cada vez que se piden.
 - **Por qué:** por recuperar.
 
-### ¿La medalla guarda también el hábito, si ya cuelga de una métrica?
-- **Decisión:** sí, a propósito (denormalizado) y con índice.
-- **Por qué:** por recuperar.
-
 ### ¿Cómo se validan los valores de los enumerados?
 - **Decisión:** doble capa: Pydantic en la API y `CheckConstraint` en la BBDD, generado automáticamente desde el propio enumerado. Los valores se guardan en minúscula; la capitalización es cosa del frontend. Las columnas siguen siendo texto plano.
-- **Por qué:** defensa en profundidad: la restricción de la BBDD cubre cualquier escritura que se salte la API (p. ej. una futura migración desde Notion).
-
-### ¿Todo hábito tiene medalla de constancia?
-- **Decisión:** debería tener al menos una. Es regla de negocio, no restricción de BBDD. Falta blindarla en el router (ver `ESTADO.md`).
-- **Por qué:** la racha del hábito se calcula sobre su medalla de constancia; sin ella no hay racha.
+- **Por qué:** defensa en profundidad: la restricción de la BBDD cubre cualquier escritura que se salte la API (p. ej. una futura importación).
 
 ### ¿Cómo se ordenan los niveles de una medalla?
-- **Decisión:** en constancia y objetivo, siempre ascendentes: el valor es un conteo (periodos cumplidos o registros que superan el listón), no el valor crudo. En ellas, "mayor es mejor" solo decide el sentido del filtro contra el listón (`>=` / `<=`). En histórica y récord, ascendentes o descendentes según "mayor es mejor".
-- **Por qué:** un conteo más alto siempre es mejor.
+- **Decisión:** en constancia y objetivo, siempre ascendentes: el valor es un conteo (periodos cumplidos o sesiones que superan el listón), no el valor crudo. En ellas, "mayor es mejor" solo decide el sentido del filtro contra el listón (`>=` / `<=`). En histórica y récord, ascendentes o descendentes según "mayor es mejor". "Mayor es mejor" va en cada medalla, no en la métrica.
+- **Por qué:** un conteo más alto siempre es mejor. La misma métrica puede ser buena alta en una medalla (la sesión más larga) y baja en otra (el sprint más rápido).
 
 ### ¿Para qué sirve que un hábito esté activo?
 - **Decisión:** para filtrar en el panel visual y mostrar solo los activos sin borrar nada.
 - **Por qué:** conservar el historial de lo que ya no sigo.
 
-### ¿Cuentan por separado varios registros el mismo día?
-- **Decisión:** sí. Dos carreras hoy son dos para un objetivo semanal.
-- **Por qué:** por recuperar.
-
 ## Medallas y rachas
+
+### ¿De dónde sale la racha?
+- **Decisión:** del objetivo de frecuencia del hábito, obligatorio desde que se crea. Sustituye a la regla anterior: todo hábito debía tener una medalla de constancia y, si tenía varias, mandaba la de periodo más corto. Cómo se guarda el objetivo está abierto en `ESTADO.md`.
+- **Por qué:** garantiza que todo hábito tenga racha y elimina el desempate entre medallas de constancia.
 
 ### ¿Qué es un periodo en las medallas de constancia?
 - **Decisión:** siempre periodos naturales de calendario (semana ISO de lunes a domingo, trimestres naturales…), nunca ventanas deslizantes.
@@ -70,10 +94,6 @@ Donde el porqué dice "por recuperar", la decisión consta pero su motivo no se 
 ### ¿Cuenta el periodo en curso?
 - **Decisión:** en la medalla de constancia, el periodo en curso cuenta en cuanto cumple, aunque no haya cerrado. En la racha, si cumple suma ya; si todavía no cumple, ni suma ni rompe; solo rompen los periodos ya cerrados que fallan.
 - **Por qué:** no castigar un periodo que aún se puede cumplir. Se descartó romper la racha por "imposibilidad matemática de cumplir el periodo actual": complica la técnica sin necesidad y asumiría como máximo un registro útil al día.
-
-### ¿Qué medalla de constancia manda en la racha del hábito?
-- **Decisión:** la de periodo más corto; si empatan, la de mayor objetivo de frecuencia. Sin medallas de constancia, no hay racha.
-- **Por qué:** por recuperar. El orden "más corto" sale del orden de declaración del enumerado de periodos, no de un valor numérico.
 
 ## API
 

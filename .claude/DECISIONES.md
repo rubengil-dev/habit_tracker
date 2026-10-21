@@ -66,7 +66,7 @@ Varias decisiones de la entrevista de diseño (21 oct 2026) cambian el modelo y 
 - **Por qué:** que un cliente no pueda fijar un nivel sin cumplirlo. El recálculo síncrono: por recuperar.
 
 ### ¿Se guarda la racha?
-- **Decisión:** no. La racha y el progreso actual de una medalla ("3/7") se calculan al vuelo cada vez que se piden.
+- **Decisión:** no. La racha, la mejor racha y el progreso actual de una medalla ("3/7") se calculan al vuelo cada vez que se piden.
 - **Por qué:** por recuperar.
 
 ### ¿Cómo se validan los valores de los enumerados?
@@ -84,8 +84,12 @@ Varias decisiones de la entrevista de diseño (21 oct 2026) cambian el modelo y 
 ## Medallas y rachas
 
 ### ¿De dónde sale la racha?
-- **Decisión:** del objetivo de frecuencia del hábito, obligatorio desde que se crea. Sustituye a la regla anterior: todo hábito debía tener una medalla de constancia y, si tenía varias, mandaba la de periodo más corto. Cómo se guarda el objetivo está abierto en `ESTADO.md`.
-- **Por qué:** garantiza que todo hábito tenga racha y elimina el desempate entre medallas de constancia.
+- **Decisión:** del objetivo de frecuencia, que es una propiedad del propio hábito, obligatoria desde que se crea. Sustituye a la regla anterior: todo hábito debía tener una medalla de constancia y, si tenía varias, mandaba la de periodo más corto. Cambiar el objetivo es retroactivo: el nuevo juzga todo el historial.
+- **Por qué:** garantiza que todo hábito tenga racha y elimina el desempate entre medallas de constancia. Se descartó que el objetivo fuera una medalla especial (reglas propias: única, no borrable y con umbrales obligatorios al crear el hábito). Se descartó guardar un historial de objetivos: si quiero conservar el anterior, creo otro hábito.
+
+### ¿Desde cuándo cuenta la racha?
+- **Decisión:** nunca antes de la fecha de inicio del hábito.
+- **Por qué:** en un hábito a evitar, un día sin sesiones es un éxito; sin ese límite, la racha recorrería el pasado sin fin (origen del bug 4 de `ESTADO.md`).
 
 ### ¿Qué es un periodo en las medallas de constancia?
 - **Decisión:** siempre periodos naturales de calendario (semana ISO de lunes a domingo, trimestres naturales…), nunca ventanas deslizantes.
@@ -93,7 +97,8 @@ Varias decisiones de la entrevista de diseño (21 oct 2026) cambian el modelo y 
 
 ### ¿Cuenta el periodo en curso?
 - **Decisión:** en la medalla de constancia, el periodo en curso cuenta en cuanto cumple, aunque no haya cerrado. En la racha, si cumple suma ya; si todavía no cumple, ni suma ni rompe; solo rompen los periodos ya cerrados que fallan.
-- **Por qué:** no castigar un periodo que aún se puede cumplir. Se descartó romper la racha por "imposibilidad matemática de cumplir el periodo actual": complica la técnica sin necesidad y asumiría como máximo un registro útil al día.
+  En modo evitar es al revés: el periodo en curso no suma hasta que se cierra, y si ya se ha pasado del máximo, rompe al momento.
+- **Por qué:** no castigar un periodo que aún se puede cumplir. Se descartó romper la racha por "imposibilidad matemática de cumplir el periodo actual": complica la técnica sin necesidad y asumiría como máximo un registro útil al día. En modo evitar, un periodo abierto aún se puede fallar (sumarlo a medianoche sería premiar sin haber hecho nada), y uno que ya ha pasado del máximo no tiene arreglo.
 
 ## API
 

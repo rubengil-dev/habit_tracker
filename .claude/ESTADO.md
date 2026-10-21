@@ -4,21 +4,20 @@
 - **Se actualiza:** al cerrar cada sesión.
 
 ## Próxima sesión
-1. **Seguir la entrevista de diseño por el bloque 4.** Los bloques 1 (para qué y para quién), 2 (modelo de datos) y 3 (medallas) se hicieron el 21 oct 2026; lo decidido está en `CONTEXTO.md` y `DECISIONES.md`. Quedan:
-   - **4. Rachas:** cómo se guarda el objetivo del hábito, la racha en modo evitar y el récord de racha.
-   - **5. Vistas y diseño visual**, incluida la retroalimentación visual al registrar y al subir de nivel.
-   - **6. Stack, hosting, login y base de datos:** qué se conserva del código y qué se rehace, presentado antes de tocar nada.
+1. **Cerrar la entrevista con los bloques 6 y 7.** Los bloques 1 a 4 (para qué y para quién, modelo de datos, medallas y rachas) se hicieron el 21 oct 2026 y lo decidido está en `CONTEXTO.md` y `DECISIONES.md`. Los dos que quedan son técnicos: Claude trae una propuesta con recomendación para cada punto y yo solo valido.
+   - **6. Stack, hosting, login y base de datos:** qué se conserva del código y qué se rehace.
    - **7. Decisiones abiertas del backend** (abajo).
 
-   Al terminar: lista del MVP (qué entra y qué va después) con una estimación, para tenerlo cuanto antes y como muy tarde el 1 ene 2027.
-2. **Entorno.** Depende del bloque 6: si cambian la BBDD o el stack, el arreglo de `.venv` y de la ruta de la BBDD puede cambiar o sobrar.
-3. **Bugs y mejoras menores.** Tras el bloque 6, ver cuáles siguen vivos con el rediseño.
+   Al terminar: lista del MVP (qué entra y qué va después) con una estimación, para tenerlo cuanto antes y como muy tarde el 1 ene 2027. Revisar entonces todos los archivos de `.claude/` cambiados en la entrevista.
+2. **Empezar el rediseño del backend.** Incluye el entorno y los bugs que sigan vivos tras el bloque 6.
+
+El bloque 5 (vistas, diseño visual y retroalimentación visual) se hace al empezar el frontend, como entrevista propia: quiero pensarlo con calma antes.
 
 ## Fases
 - [x] Backend v1: CRUD de las cuatro entidades, los cuatro tipos de medalla, recálculo síncrono, rachas y cascada.
-- [ ] Entrevista de diseño (quedan los bloques 4 a 7).
+- [ ] Entrevista de diseño (quedan los bloques 6 y 7).
 - [ ] Rediseño del backend según la entrevista.
-- [ ] Frontend.
+- [ ] Frontend, empezando por la entrevista de front (bloque 5).
 - [ ] Despliegue (entra en el MVP).
 
 ## Qué funciona
@@ -63,13 +62,8 @@ Del backend v1, todos verificados en ejecución el 15 oct 2026.
 - Frontend: confirmaciones de borrado (ver `CONTEXTO.md`).
 
 ### Decisiones abiertas
-Rachas (bloque 4):
-- Cómo se guarda el objetivo del hábito: como campo propio del hábito o como una medalla de constancia predeterminada que se crea con él.
-- Racha en modo evitar: cómo cuenta el periodo en curso.
-- Récord histórico de racha (la más larga, no la actual): no diseñado.
-
-Vistas y diseño (bloque 5):
-- Diseño visual, detalle de las dos vistas y retroalimentación visual.
+Vistas y diseño (bloque 5, al empezar el frontend):
+- Pantallas, diseño visual y retroalimentación visual (animaciones; ¿vibración o sonido?), incluido cómo se muestra la mejor racha. Hay un esqueleto propuesto por Claude: Hoy, Registrar, Medallas, Detalle del hábito y Configuración.
 
 Stack y despliegue (bloque 6):
 - Stack del backend: seguir con FastAPI o cambiar; versión de Python y gestión de dependencias (el entorno roto usa la 3.14).

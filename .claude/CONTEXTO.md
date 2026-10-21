@@ -26,7 +26,8 @@ Un habit tracker personal donde los hábitos se convierten en medallas que suben
 - Las métricas son de **número** (km, páginas) o de **duración** (se introduce con un selector de minutos y segundos).
 - Una métrica puede ser **calculada** a partir de otras dos del mismo hábito, según un tipo predefinido. De momento hay uno solo, el **ritmo** (A ÷ B: ritmo de carrera, velocidad lectora...). No se rellena a mano, queda vacía si falta alguno de los dos datos y, al crearla en un hábito con historia, se calcula para todas sus sesiones anteriores.
 - Cada hábito define sus **etiquetas** (p. ej. lluvia, cansado, molestias) y cada sesión puede llevar varias. Se eligen de la lista, no se escriben, para poder usarlas después en estadísticas.
-- Todo hábito tiene un **objetivo** de frecuencia desde que se crea (p. ej. 3 veces por semana, o como máximo 0 al día si es un hábito a evitar). De él sale la racha.
+- Todo hábito tiene un **objetivo** de frecuencia desde que se crea (p. ej. 3 veces por semana, o como máximo 0 al día si es un hábito a evitar). De él sale la racha. Al crear el hábito, la app propone una medalla de constancia ya rellena con ese objetivo; es una medalla normal, que puedo editar o borrar.
+- Todo hábito tiene una **fecha de inicio**: por defecto, la de creación; editable para cuando importe historial antiguo.
 - Un hábito puede estar **activo** o no: así se oculta lo que ya no sigo sin borrar su historia.
 - Todo es configurable por el usuario: no hay hábitos ni medallas prefijados en la app.
 
@@ -44,7 +45,9 @@ En histórica y récord, lo mejor puede ser lo más alto (distancia) o lo más b
 Al crear una medalla pongo el umbral de la primera y el de diamante, y la app propone los intermedios con una progresión exponencial redondeada (p. ej. 100, 500, 3.000, 20.000 y 100.000 km). Los reviso antes de guardar y siempre puedo editarlos a mano.
 
 ### Rachas
-La **racha** de un hábito es cuántos periodos seguidos llevo cumpliendo su objetivo, contando hacia atrás desde el actual. No hay comodines: si un día no lo he hecho, no lo he hecho. Las medallas de constancia también muestran su progreso en el periodo en curso (p. ej. "3/7").
+La **racha** de un hábito es cuántos periodos seguidos llevo cumpliendo su objetivo, contando hacia atrás desde el actual. Junto a ella se muestra la **mejor racha**, la más larga que he tenido. Las medallas de constancia también muestran su progreso en el periodo en curso (p. ej. "3/7").
+
+La app es para trackear de forma satisfactoria, no para engañarme: no hay comodines ni pausas. Si un día no lo he hecho, no lo he hecho, y desactivar un hábito no pausa su racha.
 
 ## Experiencia de usuario
 - Registrar tiene que costar poco (pocos toques) y dar algo a cambio al momento: retroalimentación visual intensa, con animaciones al registrar y al cruzar umbrales y el progreso ganado a la vista. El detalle se define al diseñar el frontend.

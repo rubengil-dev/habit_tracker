@@ -3,6 +3,10 @@
 - **No contiene:** cifras, decisiones con su porqué ni el estado actual.
 - **Se actualiza:** al cerrar cada sesión, después del commit del trabajo.
 
+## 2026-10-24: revisión de los archivos de la entrevista
+- Revisados y retocados por mí los archivos de `.claude/` y `.gitignore` (`*.venv` y `*.env` en lugar de `*env`). `CONTEXTO.md`: medallas de racha añadidas a los tipos de medalla, visión futura reordenada por actualizaciones y la nota de la medalla creada sobre un hábito con historial. `PAUTAS.md`: nueva revisión completa del proyecto cada 2 o 3 sesiones. `ESTADO.md` reestructurado.
+- Commits: `94af874`. El commit que guarda esta entrada no puede llevar su propio hash: es el último de `git log`.
+
 ## 2026-10-21: entrevista de diseño
 - Entrevista de diseño completa salvo el bloque 5 (vistas y diseño visual), aplazado al inicio del frontend. Sin cambios de código.
 - `CONTEXTO.md`: nuevo porqué del proyecto (registrar tiene que ser gratificante), MVP solo para mí con puerta abierta a más usuarios, modelo por sesiones con etiquetas y calculada de ritmo, medallas colgadas del hábito (con modo evitar y filtro por etiqueta), objetivo y fecha de inicio del hábito, mejor racha, y alcance del MVP.

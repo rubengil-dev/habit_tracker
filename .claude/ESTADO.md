@@ -1,19 +1,16 @@
 # Qué hay en este archivo y cómo usarlo
-- **Contiene:** en qué punto estamos, por dónde empezar la próxima sesión, qué funciona y qué falla, y lo pendiente y abierto.
-- **No contiene:** historial de lo que se probó por el camino ni decisiones ya cerradas.
+- **Contiene:** en qué punto estamos respecto a las fases del proyecto, por dónde empezar la próxima sesión y lo pendiente para más adelante.
+- **No contiene:** cifras, nombres de archivos, detalles de lo hecho ni decisiones ya cerradas.
 - **Se actualiza:** al cerrar cada sesión.
 
 ## Próxima sesión
-La entrevista de diseño está hecha (21 oct 2026), salvo el bloque 5 (vistas y diseño visual), que se hace al empezar el frontend. Lo decidido está en `CONTEXTO.md` y `DECISIONES.md`.
-1. **Montar el entorno del rediseño.** Arrancar por aquí para no perder tiempo después: es un side project con tiempo reducido y la meta es ir lo más rápido posible.
+1. **Montar el entorno del rediseño:**
    - Elegir la versión de Python según lo que soporte Vercel (tengo instaladas la 3.11 y la 3.14; uv descarga la que haga falta).
    - Que Claude me enseñe uv con los comandos exactos, por si lo aplico en otros proyectos.
    - Verificar las condiciones de los planes gratuitos de Vercel y Neon. Las cuentas las creo yo; Claude no las crea.
 2. **Rediseño del backend**, en rama aparte. Antes de ejecutarlo, Claude me lista punto a punto qué borra y qué crea, para tener el control y reflejarlo en `HISTORICO.md`. Con tests de pytest desde el principio (ver Tareas).
-3. **Entrevista de front** (bloque 5) cuando toque empezar el frontend.
 
 ## Fases
-Meta: usable lo antes posible y, como muy tarde, el 1 ene 2027. Es un side project con tiempo reducido: no hay estimación de plazos, se avanza lo más rápido posible.
 - [x] Backend v1: CRUD de las cuatro entidades, los cuatro tipos de medalla, recálculo síncrono, rachas y cascada.
 - [x] Entrevista de diseño, salvo el bloque 5.
 - [ ] Rediseño del backend según la entrevista.
@@ -48,7 +45,6 @@ Del backend v1, todos verificados en ejecución el 15 oct 2026. No se arreglan e
 
 ## Mejoras menores
 - Pydantic: sustituir la clase `Config` por `model_config = ConfigDict(from_attributes=True)`; la forma actual está deprecada y saca 4 avisos.
-- Mover un registro a otro hábito solo devuelve la racha del hábito nuevo (desaparece al prohibir mover).
 
 ## Entorno
 Del v1. Los dos problemas desaparecen con el rediseño (uv y variables de entorno), así que no se arreglan antes.
@@ -58,8 +54,9 @@ Del v1. Los dos problemas desaparecen con el rediseño (uv y variables de entorn
 ## Pendiente para más adelante
 
 ### Tareas
-- Tests de pytest de los casos que ya fallaron o son delicados: "menos es mejor" (p. ej. los 100 m más rápidos), periodos semanales, modo evitar (incluido el máximo 0), sesiones futuras, cambio de objetivo retroactivo, mejor racha, calculadas en hábitos con historia y borrado de etiquetas.
-- Frontend: confirmaciones de borrado (ver `CONTEXTO.md`).
+- **Tests de pytest de los casos que ya fallaron o son delicados**: "menos es mejor" (p. ej. los 100 m más rápidos), periodos semanales, modo evitar (incluido el máximo 0), sesiones futuras, cambio de objetivo retroactivo, mejor racha, calculadas en hábitos con historia y borrado de etiquetas.
+- **Frontend**: confirmaciones de borrado (ver `CONTEXTO.md`).
+- **Entrevista de front** (bloque 5) cuando toque empezar el frontend.
 
 ### Decisiones abiertas
 Frontend (bloque 5, al empezar el frontend):
@@ -73,9 +70,3 @@ Backend:
 
 Fase 2:
 - Implicaciones legales de guardar datos de otros, antes de abrir la app fuera de familia y amigos cercanos.
-
-### Mejoras futuras
-Nada por ahora (la visión futura está en `CONTEXTO.md`).
-
-### Pendiente de probar yo
-Nada.

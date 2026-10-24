@@ -22,7 +22,7 @@
 - Primero hablamos el tema hasta estar de acuerdo. Después lo implementas entero del tirón.
 - En cambios grandes (reestructuraciones, rediseños), antes de ejecutarlos lista punto a punto qué borras y qué creas, para tener el control y reflejarlo en `HISTORICO.md`. Del código existente conserva lo que sirva para no gastar tokens, pero cambia sin miedo lo que no sirva o se pueda hacer mejor.
 - Al terminar, resume como un dev junior a su jefe de proyecto: por cada archivo nuevo o cambiado, 2-4 líneas de qué hace y cómo se combinan sus funciones principales para dar el resultado. Sin código ni explicación línea a línea. Los docstrings, claros, para que también sirvan de resumen.
-- Cuando cambies archivos de `.claude/`, no me los copies en el chat: los reviso yo en el editor, que marca lo cambiado desde el último commit. Dime solo qué archivos has tocado y qué has cambiado, en pocas líneas. Cuando dé el OK a una revisión, commit, para que la siguiente ronda de cambios se vea limpia en el editor.
+- Cuando cambies archivos de `.claude/`, dime solo qué archivos has tocado y qué has cambiado, en pocas líneas. Cuando dé el OK a una revisión, commit, para que la siguiente ronda de cambios se vea limpia en el editor.
 - Si hay notebooks y código, los notebooks son independientes: no importan nada del código. Las funciones que comparten se duplican y, si cambian, se actualizan en los dos sitios.
 
 ## Pruebas
@@ -35,6 +35,7 @@ Cuando diga "cerramos", "actualiza", "hemos terminado por hoy" o similar:
 2. Actualiza los archivos de `.claude/` que toquen (como mínimo `ESTADO.md`) y enséñame los cambios para que dé el OK.
 3. Con mi OK: commit del trabajo, merge si aplica y push a GitHub.
 4. Escribe la entrada de la sesión en `HISTORICO.md` con los hashes del paso 3, y commitéala y súbela con el mismo OK. Va en un commit aparte porque un commit no puede llevar dentro su propio hash.
+5. Cada 2/3 sesiones, en función de cuánto hemos avanzado de código (ver `HISTORICO.md`), hacer una revisión completa del proyecto. Anotar en `HISTORICO.md` cuándo fue la última.
 
 ## Git
 - Cambios sencillos sin riesgo: en la rama actual. Features, bugs o cualquier cosa con riesgo: rama nueva, que se fusiona a `main` al cerrar la sesión si todo va bien.

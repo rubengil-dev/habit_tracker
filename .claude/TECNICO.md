@@ -1,5 +1,5 @@
 # Qué hay en este archivo y cómo usarlo
-- **Contiene:** cómo está hecho el proyecto: repo, entorno, comandos, estructura, datos, contratos de las funciones y trampas conocidas. Es un resumen para no tener que buscarlo en el código; si discrepa del código, manda el código.
+- **Contiene:** cómo está hecho el proyecto: repo, entorno, comandos, estructura, datos y sus limitaciones conocidas. Es un resumen para no tener que buscarlo en el código.
 - **No contiene:** el porqué de cada elección ni lo pendiente.
 - **Se actualiza:** cuando cambia algo de lo que describe.
 
@@ -7,7 +7,6 @@
 - GitHub: https://github.com/rubengil-dev/habit_tracker. Rama principal: `main`.
 - Ruta local: `C:\Data\1_MisCosas\Proyectos\HabitTracker`. Windows, con Git Bash y PowerShell.
 - Ignorados en git: `__pycache*`, `.venv`, `*env`, `*.ipynb` y las bases de datos (`*.db`, `*.sqlite`, `*.sqlite3`), así que `habits.db` no se versiona.
-- No hay `.gitattributes`: Git avisa del cambio de saltos de línea LF → CRLF al tocar archivos de texto.
 
 ## Entorno
 - Entorno virtual en `.venv`, dependencias en `requirements.txt`. Al añadir una librería: instalarla en `.venv` y regenerar con `pip freeze > requirements.txt`.

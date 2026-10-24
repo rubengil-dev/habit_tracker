@@ -41,13 +41,13 @@ Varias decisiones de la entrevista de diseño (21 oct 2026) cambian el modelo y 
 
 ### ¿Cómo se identifica cada fila?
 - **Decisión:** con UUID, no con números correlativos.
-- **Por qué:** permite fusionar bases de datos distintas sin choques, p. ej. pasar de una copia propia a la app central con exportar e importar.
+- **Por qué:** permite fusionar bases de datos distintas sin choques, p. ej. pasar de una copia propia (clon) a la app central con exportar e importar.
 
 ## Modelo de datos
 
 ### ¿Cómo se registra un hábito?
 - **Decisión:** por sesiones (ver `CONTEXTO.md`), no con un registro suelto por métrica. Varias sesiones el mismo día son independientes.
-- **Por qué:** con registros sueltos, el tiempo y la distancia de una misma actividad no quedaban unidos, y con dos actividades el mismo día era imposible calcular bien el ritmo. Dos carreras son dos actividades distintas. Además, la sesión sin valores cubre los hábitos de sí/no sin un tipo de métrica aparte.
+- **Por qué:** con registros sueltos, el tiempo y la distancia de una misma actividad no quedan unidos, y con dos actividades el mismo día es imposible calcular bien el ritmo. Dos carreras son dos actividades distintas. Además, la sesión sin valores cubre los hábitos de sí/no sin un tipo de métrica aparte.
 
 ### ¿Qué tipos de métrica hay y cómo se guarda la duración?
 - **Decisión:** número y duración. La duración se guarda en segundos; el front la introduce y la muestra como minutos y segundos.
@@ -87,7 +87,7 @@ Varias decisiones de la entrevista de diseño (21 oct 2026) cambian el modelo y 
 
 ### ¿Para qué sirve que un hábito esté activo?
 - **Decisión:** para filtrar en el panel visual y mostrar solo los activos sin borrar nada.
-- **Por qué:** conservar el historial de lo que ya no sigo.
+- **Por qué:** conservar el historial de lo que ya no sigo haciendo.
 
 ### ¿Qué fecha tiene una sesión y cuándo puede registrarse?
 - **Decisión:** la fecha es un día de calendario, sin hora, que elige el usuario (por defecto hoy). Puede ser pasada, no futura. "Hoy" y el cierre de cada periodo se calculan con la zona horaria del usuario, un ajuste suyo (columna en la tabla de usuarios) con Europe/Madrid por defecto.

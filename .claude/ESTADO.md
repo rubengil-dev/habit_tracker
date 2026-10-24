@@ -67,6 +67,10 @@ Frontend (bloque 5, al empezar el frontend):
 
 Backend:
 - Versión de Python (ver Próxima sesión).
+- Medalla de racha: ¿su valor es la mejor racha del hábito (el nivel conseguido no baja si se rompe la racha) o la racha actual (el nivel baja al romperse)? ¿Y las del modo evitar? Recomendación: la mejor racha, para que las medallas reflejen progreso conseguido.
 
 Fase 2:
 - Implicaciones legales de guardar datos de otros, antes de abrir la app fuera de familia y amigos cercanos.
+
+## Pendiente de probar yo 
+Nada.

@@ -31,14 +31,14 @@ Un habit tracker personal donde los hábitos se convierten en medallas que suben
 - Todo es configurable por el usuario: no hay hábitos ni medallas prefijados en la app.
 
 ### Las medallas
-Cada medalla pertenece a un hábito y tiene seis estados: bloqueada → desbloqueada → bronce → plata → oro → diamante. Hay cuatro tipos:
+Cada medalla pertenece a un hábito y tiene seis estados: bloqueada → desbloqueada → bronce → plata → oro → diamante. Hay cinco tipos:
 - **Histórica:** suma de una métrica ("has corrido 157 km") o número de sesiones ("100 días de gimnasio").
 - **Récord:** la mejor marca de una métrica en una sola sesión ("tu mejor ritmo es 4'56''").
 - **Objetivo:** cuántas sesiones han cumplido un listón de una métrica ("correr 10 km o más").
 - **Constancia:** en cuántos periodos de calendario (día, semana, mes, trimestre, semestre o año) has cumplido un mínimo de sesiones ("leer cada día de la semana") o, en los hábitos a evitar, no has pasado de un máximo ("30 días sin pornografía").
 - **Medallas de racha**: son como las de constancia, pero rachas de constancia ("4 semanas entrenando 3 veces a la semana").
 
-En histórica y récord, lo mejor puede ser lo más alto (distancia) o lo más bajo (ritmo, tiempo en 100 m). En objetivo y constancia el nivel siempre sube con el número de veces o periodos cumplidos.
+En histórica y récord, lo mejor puede ser lo más alto (distancia) o lo más bajo (ritmo, tiempo en 100 m). En objetivo, constancia y racha el nivel siempre sube con el número de veces o periodos cumplidos.
 
 Al crear una medalla pongo el umbral de la primera y el de diamante, y la app propone los intermedios con una progresión exponencial redondeada (p. ej. 100, 500, 3.000, 20.000 y 100.000 km). Los reviso antes de guardar y siempre puedo editarlos a mano.
 
@@ -71,7 +71,7 @@ Por definir; el detalle de las dos vistas queda pendiente hasta hacer el fronten
 3. **Despliegue:** entra en el MVP, porque registrar desde el móvil es lo que hace que apuntar cueste poco.
 
 ## Alcance del MVP
-Todo lo descrito en "El producto" (sesiones, métricas de número y duración con el ritmo como calculada, etiquetas, los cuatro tipos de medalla con modo evitar, umbrales sugeridos, objetivo, racha y mejor racha), más el login, el despliegue, el uso desde el móvil como web instalable, exportar los datos y las dos vistas con su retroalimentación visual. Lo demás está en la visión futura.
+Todo lo descrito en "El producto" (sesiones, métricas de número y duración con el ritmo como calculada, etiquetas, los cinco tipos de medalla con modo evitar, umbrales sugeridos, objetivo, racha y mejor racha), más el login, el despliegue, el uso desde el móvil como web instalable, exportar los datos y las dos vistas con su retroalimentación visual. Lo demás está en la visión futura.
 
 ## Visión futura
 Ordenadas por prioridad:

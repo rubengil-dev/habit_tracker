@@ -6,10 +6,10 @@
 ## Repo
 - GitHub: https://github.com/rubengil-dev/habit_tracker. Rama principal: `main`.
 - Ruta local: `C:\Data\1_MisCosas\Proyectos\HabitTracker`. Windows, con Git Bash y PowerShell.
-- Ignorados en git: `__pycache*`, `.venv`, `*env`, `*.ipynb` y las bases de datos (`*.db`, `*.sqlite`, `*.sqlite3`), así que `habits.db` no se versiona.
+- Ignorados en git: `__pycache*`, `*.venv`, `*.env`, `*.ipynb` y las bases de datos (`*.db`, `*.sqlite`, `*.sqlite3`), así que `habits.db` no se versiona.
 
 ## Entorno
-- Entorno virtual en `.venv`, dependencias en `requirements.txt`. Al añadir una librería: instalarla en `.venv` y regenerar con `pip freeze > requirements.txt`.
+- Entorno virtual en `*.venv`, dependencias en `requirements.txt`. Al añadir una librería: instalarla en `*.venv` y regenerar con `pip freeze > requirements.txt`.
 - Librerías clave: FastAPI, SQLAlchemy 2, Pydantic 2 y Uvicorn.
 
 ## Comandos

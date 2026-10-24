@@ -159,9 +159,3 @@ Varias decisiones de la entrevista de diseño (21 oct 2026) cambian el modelo y 
 ### ¿Dónde va cada función?
 - **Decisión:** si conoce reglas de negocio, va en el archivo de su dominio aunque no "calcule" en sentido estricto; si es una herramienta ciega y reutilizable, va en las utilidades.
 - **Por qué:** por recuperar.
-
-## Metodología
-
-### ¿Hay revisión periódica completa del código?
-- **Decisión:** no. La del 15 oct 2026 fue la última. Al cerrar cada sesión solo se hace un test rápido de lo nuevo.
-- **Por qué:** por recuperar.

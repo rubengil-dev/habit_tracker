@@ -1,6 +1,5 @@
 """
 FastAPI app:
-    - Tables creation
     - Routers registration
     - Global integrity error handler
 """
@@ -10,20 +9,8 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
 
-from database import Base, engine
-from routers import habits, metrics, badges, entries
-
-# Tables
-Base.metadata.create_all(engine)
-
 # App
-app = FastAPI()
-
-# Routers
-app.include_router(habits.router)
-app.include_router(metrics.router)
-app.include_router(badges.router)
-app.include_router(entries.router)
+app = FastAPI(title="Habit Tracker")
 
 
 @app.exception_handler(IntegrityError)

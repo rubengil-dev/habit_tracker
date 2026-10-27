@@ -37,13 +37,15 @@ class Progress:
     current_streak: int | None          # Streak badges only
 
 
-def recalculate_badges(db: Session, habit: Habit, today: dt.date) -> list[BadgeChange]:
+def recalculate_badges(db: Session, habit: Habit, today: dt.date,
+                       history: list[EntryFacts] | None = None) -> list[BadgeChange]:
     """
-    Badges of a habit recalculated after any change:
+    Badges of a habit recalculated after a change, or on reading them (avoid badges grow with time):
         - New value and tier saved in each badge; the caller commits
         - Only the badges that changed are reported
+        - history: the habit's sessions, if already loaded
     """
-    history = load_history(db, habit.id)
+    history = load_history(db, habit.id) if history is None else history
     changes = []
 
     for badge in db.scalars(select(Badge).where(Badge.habit_id == habit.id)):

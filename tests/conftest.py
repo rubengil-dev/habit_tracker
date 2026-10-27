@@ -2,13 +2,14 @@
 Test fixtures:
     - Safety check: never run against the app's own database
     - Empty database per test: SQLite in memory, or TEST_DATABASE_URL for a real Postgres
-    - A user and a habit ready to use
+    - A user and a habit ready to use; a full running habit for the session and badge tests
     - API clients on that database, with today fixed: anonymous, or logged in as the user
 """
 
 # Imports
 import datetime as dt
 import pytest
+from types import SimpleNamespace
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 from sqlalchemy import create_engine, event
@@ -18,11 +19,11 @@ from sqlalchemy.pool import StaticPool
 from app.config import get_settings, sqlalchemy_url
 from app.database import Base, get_db
 from app.dependencies import COOKIE_NAME, user_today
-from app.enums import Period
+from app.enums import BadgeKind, MetricKind, Period
 from app.main import app
-from app.models import Habit, User
+from app.models import Badge, Habit, Metric, Tag, User
 from app.services.auth import open_session
-from tests.helpers import PASSWORD_HASH, TEST_DATABASE_URL, TODAY, add
+from tests.helpers import ASCENDING, PASSWORD_HASH, TEST_DATABASE_URL, TODAY, add
 
 
 def pytest_configure(config):
@@ -66,6 +67,18 @@ def user(db):
 def habit(db, user):
     """Daily habit of the test user."""
     return add(db, Habit(user_id=user.id, name="Run", start_date=dt.date(2026, 1, 1), goal_target=1, goal_period=Period.DAILY))
+
+
+@pytest.fixture
+def run(db, habit):
+    """The test habit set up for running: time, km, pace = time ÷ km, a "Rain" tag and a km badge."""
+    time = add(db, Metric(habit_id=habit.id, name="Time", kind=MetricKind.DURATION))
+    km = add(db, Metric(habit_id=habit.id, name="Km", unit="km", kind=MetricKind.NUMBER))
+    pace = add(db, Metric(habit_id=habit.id, name="Pace", kind=MetricKind.RATIO, operand_a_id=time.id, operand_b_id=km.id))
+    rain = add(db, Tag(habit_id=habit.id, name="Rain"))
+    km_badge = add(db, Badge(habit_id=habit.id, metric_id=km.id, name="Km run", kind=BadgeKind.HISTORIC, **ASCENDING))
+
+    return SimpleNamespace(habit=habit, time=time, km=km, pace=pace, rain=rain, km_badge=km_badge)
 
 
 @pytest.fixture

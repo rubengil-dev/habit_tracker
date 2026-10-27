@@ -2,7 +2,7 @@
 Goals over natural periods ("at least / at most n sessions per period"):
     - Outcome of every period since the habit started
     - Current and best streak
-    - Streaks of a habit, from its own goal
+    - Streaks of a habit, from its own goal, and how its current period is going
 """
 
 # Imports
@@ -27,6 +27,19 @@ def habit_streaks(habit: Habit, history: list[EntryFacts], today: dt.date) -> tu
     dates = [entry.date for entry in history]
     outcomes = period_outcomes(dates, habit.goal_period, habit.goal_target, habit.goal_mode, habit.start_date, today)
     return streaks(outcomes)
+
+
+def goal_so_far(habit: Habit, history: list[EntryFacts], today: dt.date) -> tuple[int, bool]:
+    """
+    Sessions in the goal's current period → (count, met so far):
+        - At least n: met once it reaches n
+        - At most n (avoid): met while it does not go over n
+    """
+    current = period_start(today, habit.goal_period)
+    count = sum(1 for entry in history if period_start(entry.date, habit.goal_period) == current)
+
+    met = count >= habit.goal_target if habit.goal_mode == GoalMode.MIN else count <= habit.goal_target
+    return count, met
 
 
 def period_outcomes(dates: list[dt.date], period: Period, target: int, mode: GoalMode,

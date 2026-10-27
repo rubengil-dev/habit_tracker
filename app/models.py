@@ -90,6 +90,9 @@ class AuthSession(Entity, Base):
     token_hash: Mapped[str] = mapped_column(unique=True)        # SHA-256 of the cookie token
     expires_at: Mapped[dt.datetime] = mapped_column(UTCDateTime())
 
+    # Parent
+    user: Mapped["User"] = relationship(lazy="joined")
+
 
 # Habits
 

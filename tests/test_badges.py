@@ -11,8 +11,9 @@ import datetime as dt
 from uuid import uuid4
 
 from app.enums import BadgeKind, GoalMode, MetricKind, Period, TagRule, Tier
-from app.models import Badge, BadgeTag, Entry, EntryValue, Metric
+from app.models import Badge, BadgeTag, Entry, EntryValue, Metric, Tag
 from app.services.badges import badge_progress, badge_value, recalculate_badges
+from app.services.ratios import backfill_ratio
 from tests.helpers import ASCENDING, add, facts, make_badge
 
 # Monday
@@ -107,6 +108,14 @@ def test_streak_value_survives_a_break():
     assert badge_progress(badge, history, START, two_weeks_later).current_streak == 0
 
 
+def test_streak_badge_in_avoid_mode():
+    """At most 0 a day: best clean run is 6 days (6th to 11th, and 13th to 18th); the current one, 5 days."""
+    badge = make_badge(kind=BadgeKind.STREAK, period=Period.DAILY, target=0, mode=GoalMode.MAX)
+
+    assert value_of(badge) == 6
+    assert badge_progress(badge, RUNS, START, TODAY).current_streak == 5
+
+
 def test_consistency_with_a_bar():
     """Weeks with a run of 10 km or more."""
     badge = make_badge(
@@ -153,6 +162,14 @@ def test_consistency_progress_this_period():
     assert (progress.period_count, progress.target, progress.current_streak) == (2, 3, None)
 
 
+def test_avoid_progress_shows_what_is_over():
+    """At most 0 a day, one session today → 1/0: the front can show the slip."""
+    badge = make_badge(kind=BadgeKind.CONSISTENCY, period=Period.DAILY, target=0, mode=GoalMode.MAX)
+    progress = badge_progress(badge, RUNS + [facts(TODAY)], START, TODAY)
+
+    assert (progress.period_count, progress.target) == (1, 0)
+
+
 def test_no_progress_for_other_kinds():
     """Only consistency and streak badges have a period."""
     assert badge_progress(make_badge(kind=BadgeKind.HISTORIC), RUNS, START, TODAY) is None
@@ -184,3 +201,28 @@ def test_recalculation_after_deleting_every_session(db, habit):
     recalculate_badges(db, habit, TODAY)
 
     assert (badge.current_value, badge.current_tier) == (None, Tier.LOCKED)
+
+
+def test_recalculation_with_tags_and_ratio_from_the_database(db, habit):
+    """Best pace in the rain: tag rules and ratio values read back from their tables."""
+    time = add(db, Metric(habit_id=habit.id, name="Time", kind=MetricKind.DURATION))
+    km = add(db, Metric(habit_id=habit.id, name="Km", unit="km", kind=MetricKind.NUMBER))
+    rain = add(db, Tag(habit_id=habit.id, name="Rain"))
+    add(db,
+        Entry(habit_id=habit.id, date=dt.date(2026, 10, 5), tags=[rain], values=[EntryValue(metric_id=time.id, value=1500), EntryValue(metric_id=km.id, value=5)]),
+        Entry(habit_id=habit.id, date=dt.date(2026, 10, 6), values=[EntryValue(metric_id=time.id, value=2700), EntryValue(metric_id=km.id, value=10)]),
+        Entry(habit_id=habit.id, date=dt.date(2026, 10, 7), tags=[rain], values=[EntryValue(metric_id=time.id, value=1680), EntryValue(metric_id=km.id, value=6)]),
+    )
+    pace = Metric(habit_id=habit.id, name="Pace", kind=MetricKind.RATIO, operand_a_id=time.id, operand_b_id=km.id)
+    db.add(pace)
+    backfill_ratio(db, pace)
+    badge = add(db, Badge(
+        habit_id=habit.id, metric_id=pace.id, name="Rainy pace", kind=BadgeKind.RECORD, higher_is_better=False,
+        unlocked=400, bronze=360, silver=330, gold=300, diamond=270,
+        tag_rules=[BadgeTag(tag_id=rain.id, rule=TagRule.REQUIRED)],
+    ))
+    db.expire_all()
+
+    recalculate_badges(db, habit, TODAY)
+
+    assert (badge.current_value, badge.current_tier) == (280, Tier.GOLD)

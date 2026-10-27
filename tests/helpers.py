@@ -1,11 +1,13 @@
 """
 Helpers shared by the tests:
+    - Test database and the test user's password
     - Rows saver, rejection check for database rules and row counter
     - Unsaved habits, badges and session facts, for the calculations
 """
 
 # Imports
 import datetime as dt
+import os
 import pytest
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
@@ -13,7 +15,18 @@ from sqlalchemy.orm import Session
 
 from app.enums import GoalMode, Tier
 from app.models import Badge, Habit
+from app.services.auth import hash_password
 from app.services.history import EntryFacts
+
+# SQLite in memory by default; set TEST_DATABASE_URL to run against a throwaway Postgres
+TEST_DATABASE_URL = os.environ.get("TEST_DATABASE_URL", "sqlite://")
+
+# Today for the API tests: a Monday
+TODAY = dt.date(2026, 10, 26)
+
+# Hashed once: Argon2 is slow on purpose
+PASSWORD = "correct horse battery"
+PASSWORD_HASH = hash_password(PASSWORD)
 
 # Tier thresholds that go up, for counts and "higher is better"
 ASCENDING = dict(unlocked=1, bronze=5, silver=10, gold=50, diamond=100)

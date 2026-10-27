@@ -52,6 +52,12 @@ def test_enum_values_checked_by_database(db, user):
     assert_rejected(db, Habit(user_id=user.id, name="Gym", start_date=DAY, goal_target=1, goal_period="fortnightly"))
 
 
+def test_datetimes_come_back_with_timezone(db, user):
+    """SQLite returns datetimes without timezone: UTCDateTime gives them back in UTC, like Postgres."""
+    db.expire_all()
+    assert db.get(User, user.id).created_at.utcoffset() == dt.timedelta(0)
+
+
 def test_ratio_needs_two_different_operands(db, habit):
     """A ratio needs operands A and B, different; a typed-in metric has none."""
     distance = add(db, Metric(habit_id=habit.id, name="Distance", unit="km", kind=MetricKind.NUMBER))

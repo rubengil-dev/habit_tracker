@@ -42,6 +42,16 @@ def test_period_starts_cover_every_period():
     assert starts == [dt.date(2026, 11, 1), dt.date(2026, 12, 1), dt.date(2027, 1, 1), dt.date(2027, 2, 1)]
 
 
+@pytest.mark.parametrize(("utc_moment", "madrid_day"), [
+    (dt.datetime(2026, 10, 26, 23, 30, tzinfo=dt.UTC), dt.date(2026, 10, 27)),     # Winter: Madrid is UTC+1
+    (dt.datetime(2026, 7, 10, 22, 30, tzinfo=dt.UTC),  dt.date(2026, 7, 11)),      # Summer: Madrid is UTC+2
+    (dt.datetime(2026, 7, 10, 21, 30, tzinfo=dt.UTC),  dt.date(2026, 7, 10)),
+])
+def test_today_turns_at_local_midnight(utc_moment, madrid_day):
+    """At 00:30 in Madrid it is already the next day, although the server (UTC) is still on the previous one."""
+    assert local_today("Europe/Madrid", now=utc_moment) == madrid_day
+
+
 def test_local_today_follows_timezone():
     """UTC+14 and UTC-11 are always on different days: the timezone is applied (and tzdata works on Windows)."""
     ahead = local_today("Pacific/Kiritimati")

@@ -59,6 +59,7 @@ def test_counts_always_go_up():
     (1,     100,    [1, 3, 10, 30, 100]),                   # Sessions
     (1,     30,     [1, 2, 5, 10, 30]),                     # Days in a row
     (400,   270,    [400, 360, 330, 300, 270]),             # Pace, lower is better
+    (0.5,   0.1,    [0.5, 0.33, 0.22, 0.15, 0.1]),          # Decimals, lower is better
 ])
 def test_suggested_tiers(first, diamond, tiers):
     """Exponential progression, rounded to friendly numbers while it stays in order."""

@@ -59,6 +59,7 @@ def period_starts(first_day: dt.date, last_day: dt.date, period: Period) -> list
     return starts
 
 
-def local_today(timezone: str) -> dt.date:
-    """Today in the user's timezone: the server runs in UTC."""
-    return dt.datetime.now(ZoneInfo(timezone)).date()
+def local_today(timezone: str, now: dt.datetime | None = None) -> dt.date:
+    """Today in the user's timezone: the server runs in UTC. now: a fixed moment, for tests."""
+    now = now or dt.datetime.now(dt.UTC)
+    return now.astimezone(ZoneInfo(timezone)).date()

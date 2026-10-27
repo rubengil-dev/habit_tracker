@@ -3,6 +3,15 @@
 - **No contiene:** cifras, decisiones con su porqué ni el estado actual.
 - **Se actualiza:** al cerrar cada sesión, después del commit del trabajo.
 
+## 2026-10-26 y 27: rediseño del backend
+- Entorno: uv con Python 3.14; condiciones de los planes gratuitos de Vercel y Neon verificadas; cuenta de Neon con las ramas `production` y `dev`, migración inicial aplicada en `dev` y mi usuario creado.
+- Rediseño del backend en la rama `redesign`, por paradas revisadas una a una, y fusionado en `main`:
+  - Borrado: `requirements.txt` y, de la raíz, `database.py`, `enums.py`, `main.py`, `models.py`, `schemas.py`, `routers/` y `services/` (lo útil, portado a `app/`). Fuera de git: `.venv` y `habits.db`.
+  - Creado: `pyproject.toml`, `uv.lock`, `.python-version` y `.env.example`; `app/` con configuración, BBDD Postgres, las tablas nuevas, schemas, dependencias, routers (login, hábitos, métricas, etiquetas, sesiones, medallas, vista del día y exportar) y servicios (periodos, niveles y umbrales sugeridos, ritmos, rachas, medallas, etiquetas y login); `migrations/` (Alembic) con la migración inicial; `tests/` (pytest, también contra Postgres) y `scripts/create_user.py`.
+  - Los bugs del v1 quedan resueltos y cubiertos por tests. Arreglado además un 500 al recibir un `NaN`.
+- `.claude/`: `TECNICO.md` reescrito; `DECISIONES.md` y `ESTADO.md` al día con el rediseño; `CONTEXTO.md`: filtros de etiquetas en las medallas.
+- Commits: `b21b7ad` (entorno, modelo de datos, migración y servicios), `ec1f1d9` (login, hábitos, métricas y etiquetas), `66ca9d4` (sesiones, medallas, vista del día y exportar) y `1c010cd` (archivos de Claude). El commit que guarda esta entrada no puede llevar su propio hash: es el último de `git log`.
+
 ## 2026-10-24: revisión de los archivos de la entrevista
 - Revisados y retocados por mí los archivos de `.claude/` y `.gitignore` (`*.venv` y `*.env` en lugar de `*env`). `CONTEXTO.md`: medallas de racha añadidas a los tipos de medalla, visión futura reordenada por actualizaciones y la nota de la medalla creada sobre un hábito con historial. `PAUTAS.md`: nueva revisión completa del proyecto cada 2 o 3 sesiones. `ESTADO.md` reestructurado.
 - Commits: `94af874`. El commit que guarda esta entrada no puede llevar su propio hash: es el último de `git log`.

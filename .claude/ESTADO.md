@@ -4,8 +4,10 @@
 - **Se actualiza:** al cerrar cada sesión.
 
 ## Próxima sesión
-1. **Revisión completa del proyecto**: toca según `PAUTAS.md` (la última fue el 15 oct) y el backend es nuevo entero.
-2. **Entrevista de front** (bloque 5) y arranque del frontend.
+**Revisión completa del proyecto**: toca según `PAUTAS.md` (la última fue el 15 oct) y el backend es nuevo entero. Incluye probar la API de punta a punta contra la rama `dev` de Neon. Lo que salga se arregla en la misma sesión; si no sale nada, la sesión es breve y se cierra ahí.
+
+## Sesión siguiente
+**Entrevista de front** (bloque 5): diseño del frontend en conjunto y arranque.
 
 ## Fases
 - [x] Backend v1: CRUD de las cuatro entidades, los cuatro tipos de medalla, recálculo síncrono, rachas y cascada.
@@ -26,7 +28,6 @@ Backend rediseñado, con sus casos cubiertos por los tests y probado también co
 
 ### Tareas
 - **Frontend**: confirmaciones de borrado (ver `CONTEXTO.md`).
-- **Entrevista de front** (bloque 5) cuando toque empezar el frontend.
 - **Al desplegar**: crear mi usuario en la rama `production` de Neon; usar en Vercel la conexión con pooling de Neon; poner las funciones de Vercel en Frankfurt, junto a Neon; dejar los tests fuera de lo que se despliega; configurar las variables de entorno en Vercel.
 - **Fase 2, prioridad**: el bloqueo del login es por usuario, así que quien conozca un nombre de usuario puede tenerlo bloqueado a base de fallos. Añadir otra defensa (p. ej. límite por IP) antes de abrir la app a más gente.
 

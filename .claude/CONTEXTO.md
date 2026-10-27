@@ -24,7 +24,7 @@ Un habit tracker personal donde los hábitos se convierten en medallas que suben
 - Dentro de la sesión relleno los **valores** de sus métricas, todos opcionales. Una sesión sin valores es un simple "lo he hecho": así funcionan los hábitos de sí/no (gimnasio, crochet).
 - Las métricas son de **número** (km, páginas) o de **duración** (se introduce con un selector de minutos y segundos).
 - Una métrica puede ser **calculada** a partir de otras dos del mismo hábito, según un tipo predefinido. De momento hay uno solo, el **ritmo** (A ÷ B: ritmo de carrera, velocidad lectora...). No se rellena a mano, queda vacía si falta alguno de los dos datos y, al crearla en un hábito con historia, se calcula para todas sus sesiones anteriores.
-- Cada hábito define sus **etiquetas** (p. ej. lluvia, cansado, molestias) y cada sesión puede llevar varias. Se eligen de la lista, no se escriben, para poder usarlas después en estadísticas.
+- Cada hábito define sus **etiquetas** (p. ej. lluvia, cansado, molestias) y cada sesión puede llevar varias. Se eligen de la lista, no se escriben, para poder usarlas en las medallas y, más adelante, en las estadísticas.
 - Todo hábito tiene un **objetivo** de frecuencia desde que se crea (p. ej. 3 veces por semana, o como máximo 0 al día si es un hábito a evitar). De él sale la racha. Al crear el hábito, la app propone una medalla de constancia ya rellena con ese objetivo; es una medalla normal, que puedo editar o borrar.
 - Todo hábito tiene una **fecha de inicio**: por defecto, la de creación; editable para cuando importe historial antiguo.
 - Un hábito puede estar **activo** o no: así se oculta lo que ya no sigo sin borrar su historia.
@@ -39,6 +39,8 @@ Cada medalla pertenece a un hábito y tiene seis estados: bloqueada → desbloqu
 - **Medallas de racha**: son como las de constancia, pero rachas de constancia ("4 semanas entrenando 3 veces a la semana").
 
 En histórica y récord, lo mejor puede ser lo más alto (distancia) o lo más bajo (ritmo, tiempo en 100 m). En objetivo, constancia y racha el nivel siempre sube con el número de veces o periodos cumplidos.
+
+Una medalla puede contar solo ciertas sesiones según sus etiquetas: las que llevan todas las que elija ("correr bajo la lluvia"), las que no llevan ninguna de otras, o solo las que no llevan ninguna etiqueta ("entrenamiento perfecto").
 
 Al crear una medalla pongo el umbral de la primera y el de diamante, y la app propone los intermedios con una progresión exponencial redondeada (p. ej. 100, 500, 3.000, 20.000 y 100.000 km). Los reviso antes de guardar y siempre puedo editarlos a mano.
 

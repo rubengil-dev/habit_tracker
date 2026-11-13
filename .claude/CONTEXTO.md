@@ -38,7 +38,7 @@ Cada medalla pertenece a un hábito y tiene seis estados: bloqueada → desbloqu
 - **Constancia:** en cuántos periodos de calendario (día, semana, mes, trimestre, semestre o año) has cumplido un mínimo de sesiones ("leer cada día de la semana") o, en los hábitos a evitar, no has pasado de un máximo ("30 días sin pornografía").
 - **Medallas de racha**: son como las de constancia, pero rachas de constancia ("4 semanas entrenando 3 veces a la semana").
 
-En histórica y récord, lo mejor puede ser lo más alto (distancia) o lo más bajo (ritmo, tiempo en 100 m). En objetivo, constancia y racha el nivel siempre sube con el número de veces o periodos cumplidos.
+Solo en récord lo mejor puede ser lo más alto (distancia) o lo más bajo (ritmo, tiempo en 100 m). En histórica, objetivo, constancia y racha el nivel siempre sube: con lo acumulado o con el número de veces o periodos cumplidos.
 
 Una medalla puede contar solo ciertas sesiones según sus etiquetas: las que llevan todas las que elija ("correr bajo la lluvia"), las que no llevan ninguna de otras, o solo las que no llevan ninguna etiqueta ("entrenamiento perfecto").
 

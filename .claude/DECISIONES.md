@@ -16,8 +16,16 @@ Donde el porqué dice "por recuperar", la decisión consta pero su motivo no se 
 - **Por qué:** los hostings gratuitos no conservan el disco, así que un archivo SQLite perdería los datos al desplegar. Neon es gratuito y de sobra para un usuario, se duerme solo sin uso y despierta al conectarse, sin las pausas manuales de Supabase.
 
 ### ¿Contra qué base de datos se desarrolla y se prueba?
-- **Decisión:** los tests, en SQLite en memoria (una base de datos nueva por test) y, cuando se quiera, contra un Postgres de usar y tirar. El servidor local, contra la rama `dev` de Neon; la app desplegada, contra la rama `production`.
-- **Por qué:** SQLite en memoria es rápido, no necesita red y no toca datos reales. Postgres instalado en local obligaría a instalarlo o a usar Docker. Una rama de Neon es una copia aparte que se puede romper sin tocar la de producción.
+- **Decisión:** los tests, en SQLite en memoria (una base de datos nueva por test) y también contra un Postgres de usar y tirar: en cada push lo hace la integración continua y, en local, un contenedor de Docker cuando se quiera. El servidor local, contra la rama `dev` de Neon; la app desplegada, contra la rama `production`.
+- **Por qué:** SQLite en memoria es rápido, no necesita red y no toca datos reales. La pasada contra Postgres pilla lo que SQLite no ve (las migraciones, sobre todo), y que la haga el CI evita depender de acordarse. El Postgres de Docker solo existe mientras dura la prueba, así que no es un servidor que mantener. Una rama de Neon es una copia aparte que se puede romper sin tocar la de producción.
+
+### ¿Cómo se prueba cada cambio antes de fusionarlo?
+- **Decisión:** integración continua en GitHub Actions en cada push: linter, tests en SQLite con un mínimo del 95 % de cobertura del código de la app, y tests contra Postgres. El linter (Ruff) solo busca fallos reales, no estilo.
+- **Por qué:** los tests se pasaban solo a mano, y el de migraciones se saltaba siempre en local. El estilo ya lo fija `ESTILO.md`, y las reglas de estilo de Ruff chocaban con él (orden de imports, tablas alineadas con `dict(...)`, `Depends` de FastAPI).
+
+### ¿Cómo se generan datos de prueba?
+- **Decisión:** un script rehace desde cero un usuario `demo` en la rama `dev`, siempre con los mismos datos, sin tocar a ningún otro usuario. Antes de escribir pide teclear el nombre de la rama de Neon (`dev`), y la contraseña del usuario `demo` se pide al ejecutarlo; no está escrita en ningún sitio.
+- **Por qué:** el front necesita hábitos con meses de historial, y un usuario aparte no mezcla esos datos con los míos de `dev`. La URL de Neon no dice a qué rama apunta, así que el script no puede negarse solo; la confirmación tecleada obliga a mirarlo. Sin contraseña fija, ejecutarlo por error en producción no deja una cuenta con una contraseña conocida.
 
 ### ¿App nativa o web instalable?
 - **Decisión:** web instalable. Se prueba sobre Android.
@@ -135,14 +143,22 @@ Donde el porqué dice "por recuperar", la decisión consta pero su motivo no se 
 - **Por qué:** no castigar un periodo que aún se puede cumplir. Se descartó romper la racha por "imposibilidad matemática de cumplir el periodo actual": complica la técnica sin necesidad y asumiría como máximo un registro útil al día. En modo evitar, un periodo abierto aún se puede fallar (sumarlo a medianoche sería premiar sin haber hecho nada), y uno que ya ha pasado del máximo no tiene arreglo.
 
 ### ¿Dónde se calculan los umbrales sugeridos?
-- **Decisión:** en el backend, con un endpoint. Progresión exponencial entre el primer umbral y el de diamante, redondeada a números redondos (1, 2, 3 o 5 por una potencia de 10) mientras sigan en orden; si se repetirían, redondea menos.
-- **Por qué:** es Python, se prueba con pytest y lo puedo leer.
+- **Decisión:** en el backend, con un endpoint. Progresión exponencial entre el primer umbral y el de diamante, redondeada a números redondos (1, 2, 3 o 5 por una potencia de 10) mientras sigan en orden; si se repetirían, redondea menos. Con la opción de enteros, solo propone enteros: redondos si caben y, si no, los enteros más cercanos separados al menos en 1; si no caben cinco distintos, lo rechaza.
+- **Por qué:** es Python, se prueba con pytest y lo puedo leer. Los enteros, porque en rangos estrechos salían umbrales como "1,5 semanas".
+
+### ¿Qué medallas llevan umbrales enteros?
+- **Decisión:** las que cuentan sesiones o periodos: objetivo, constancia, racha e histórica sin métrica. Se rechazan con decimales al crearlas y al editarlas. La histórica de una métrica y el récord admiten decimales.
+- **Por qué:** su valor siempre es un número entero; un umbral de 2,5 sesiones equivale a 3 y solo confunde.
+
+### ¿Cómo se evitan los errores de redondeo de los decimales?
+- **Decisión:** la suma de las históricas y el valor de los ritmos se redondean a 12 cifras significativas antes de guardarse, igual que los umbrales sugeridos.
+- **Por qué:** en coma flotante 0,1 + 0,7 da 0,7999999999999999, y una medalla con umbral 0,8 se quedaba sin subir. Doce cifras sobran para cualquier marca y quitan ese ruido.
 
 ## API
 
 ### ¿Cómo son las rutas?
-- **Decisión:** crear y listar cuelgan del hábito (`/habits/{id}/metrics`); leer, editar y borrar un elemento van directos (`/metrics/{id}`). La vista del día va en `/today`.
-- **Por qué:** al crear, el hábito sale de la ruta y ya no se puede cambiar; para un elemento basta su id. `/habits/today` se confundiría con `/habits/{id}`.
+- **Decisión:** todas cuelgan de `/api`. Crear y listar cuelgan del hábito (`/api/habits/{id}/metrics`); leer, editar y borrar un elemento van directos (`/api/metrics/{id}`). La vista del día va en `/api/today`.
+- **Por qué:** front y API comparten dirección, así que las rutas sin prefijo quedan para las pantallas del front (`/today` es a la vez pantalla y endpoint). Al crear, el hábito sale de la ruta y ya no se puede cambiar; para un elemento basta su id. `/habits/today` se confundiría con `/habits/{id}`.
 
 ### ¿Qué ve cada usuario?
 - **Decisión:** solo lo suyo. Lo de otro usuario responde 404, como si no existiera.
@@ -169,8 +185,12 @@ Donde el porqué dice "por recuperar", la decisión consta pero su motivo no se 
 - **Por qué:** legibilidad.
 
 ### ¿Dónde se capturan los errores?
-- **Decisión:** de forma global, no por endpoint: los de integridad de la BBDD devuelven 400, y los de validación, 422 con dónde y por qué, sin repetir el valor enviado.
-- **Por qué:** los de integridad, por recuperar. El valor enviado no se repite porque un `NaN` no se puede escribir en JSON y convertía el 422 en un 500.
+- **Decisión:** de forma global, no por endpoint: los de integridad de la BBDD devuelven 409 si es un nombre repetido y 400 en el resto, sin repetir el texto de la BBDD; los de validación, 422 con dónde y por qué, sin repetir el valor enviado. Antes de llegar a la BBDD, la edición de un hábito o de una medalla se valida como si fuera nueva.
+- **Por qué:** los de integridad, por recuperar. El texto de la BBDD no se repite porque no se entiende y puede llevar valores. El valor enviado no se repite porque un `NaN` no se puede escribir en JSON y convertía el 422 en un 500. Validar la edición entera da el mismo 422 que al crear, en vez de un error de la BBDD.
+
+### ¿Cómo es una respuesta de error?
+- **Decisión:** siempre `{"detail": texto, "code": código}`, con un código fijo por cada error (lista en `TECNICO.md`). El front muestra su propio texto en español según el código; el texto de `detail` es para quien lee la API.
+- **Por qué:** el front no puede decidir qué mostrar a partir de un texto que puede cambiar, y así los mensajes de la app no dependen de la API.
 
 ### ¿Cómo recibe el frontend el efecto de una sesión sobre las medallas y la racha?
 - **Decisión:** dentro de la respuesta del POST, el PATCH y el DELETE de sesiones: la sesión, solo las medallas que han cambiado (con su valor y nivel anteriores) y la racha y la mejor racha. Las que suben solas con los días (modo evitar) llegan en la vista del día.
@@ -187,7 +207,7 @@ Donde el porqué dice "por recuperar", la decisión consta pero su motivo no se 
 ## Código
 
 ### ¿Dónde va cada función?
-- **Decisión:** si conoce reglas de negocio, va en el archivo de su dominio aunque no "calcule" en sentido estricto; si es una herramienta ciega y reutilizable, va en las utilidades.
+- **Decisión:** si conoce reglas de negocio, va en el archivo de su dominio aunque no "calcule" en sentido estricto; si es una herramienta ciega y reutilizable, va en las utilidades (`app/utils/`, un archivo por tema).
 - **Por qué:** por recuperar.
 
 ### ¿Cómo se llama una sesión en el código?

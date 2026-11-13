@@ -4,7 +4,7 @@
 - **Se actualiza:** al cerrar cada sesión.
 
 ## Próxima sesión
-**Bloque 1 del plan de mejoras** (quick wins), en su rama. Antes de empezar, cerrar las dos decisiones de "Revisión" de más abajo. La revisión completa del proyecto se hizo el 12 nov 2026 y de ella sale el plan; quedaron sin hacer la prueba de la API de punta a punta contra la rama `dev` de Neon y el linter (plan, 3.7).
+**Probar contra la rama `dev` de Neon y seguir con el bloque 2 del plan**: ejecutar yo el script de datos de prueba (pide teclear `dev` y la contraseña del usuario `demo`), prueba de la API de punta a punta con esos datos y medición de las consultas (3.7 y 2.5), y tests de regresión (2.6). Antes de tocar 3.2 hay que cerrar las decisiones de "Revisión" de más abajo.
 
 ## Sesión siguiente
 **Entrevista de front** (bloque 5): diseño del frontend en conjunto y arranque. En ella se cierran los puntos 2.1 y 2.2 del plan, que cambian lo que la API le devuelve al front.
@@ -22,30 +22,12 @@ Backend rediseñado, con sus casos cubiertos por los tests y probado también co
 - Hábitos, métricas (número, duración y ritmo), etiquetas, sesiones y los cinco tipos de medalla, con modo evitar y filtros de etiquetas.
 - Recálculo de medallas al escribir y al leer, racha y mejor racha, progreso del periodo en curso y umbrales sugeridos.
 - Vista del día y exportar.
+- Todas las rutas bajo `/api`, y todos los errores con un código fijo para el front.
+- Integración continua en cada push (linter, tests en SQLite y en Postgres) y script de datos de prueba.
 - Migración aplicada en la rama `dev` de Neon, con mi usuario creado.
 
 ## Plan de mejoras
-Sale de la revisión del 12 nov 2026. Tres bloques, en este orden, cada uno en su rama. Cuando un punto se termina, se quita de aquí.
-
-### Bloque 1: quick wins (fáciles y aportan)
-- **1.1 Integración continua.**
-  - Por qué: los tests solo se pasan a mano y el de migraciones se salta siempre en local. Lo que venga después queda protegido.
-  - Cómo: un workflow de GitHub Actions que pase los tests en cada push, en SQLite y contra un Postgres de usar y tirar, con un mínimo de cobertura.
-- **1.2 Suma con decimales.**
-  - Por qué: una suma con decimales puede quedarse una milésima por debajo del umbral y dejar la medalla sin subir. Es el único fallo que da un resultado incorrecto en el uso normal. Los ritmos tienen el mismo problema.
-  - Cómo: redondear la suma de las históricas y el valor de los ritmos con el limpiador de decimales que ya usan los umbrales sugeridos, y un test del caso.
-- **1.3 Prefijo `/api` en todas las rutas.**
-  - Por qué: front y API compartirán dirección, y la vista del día sería a la vez pantalla y endpoint. Ahora es una línea por router; con el front escrito, más caro.
-  - Cómo: registrar los routers con el prefijo y usar la misma base en el cliente de los tests.
-- **1.4 Errores legibles.**
-  - Por qué: algunas respuestas devuelven el texto crudo de la BBDD, que el front no puede mostrar ni interpretar.
-  - Cómo: validar el hábito editado entero, como ya se hace con las medallas, y traducir cada restricción de la BBDD a un mensaje con código estable, con un código de respuesta propio para los nombres repetidos.
-- **1.5 Umbrales enteros en las medallas de conteo.**
-  - Por qué: en rangos estrechos, los umbrales sugeridos salen con decimales para cosas que se cuentan en sesiones o periodos.
-  - Cómo: una opción en los umbrales sugeridos que redondee a enteros y rechace el rango si no caben cinco distintos, y exigir enteros al crear o editar medallas de conteo.
-- **1.6 Datos de prueba.**
-  - Por qué: el front necesita hábitos con meses de historial para verse con datos reales, y el test de regresión (2.6) usa el mismo dato.
-  - Cómo: un script que cree en la rama `dev` un par de hábitos con métricas, etiquetas, medallas y sesiones.
+Sale de la revisión del 12 nov 2026. Tres bloques, en este orden, cada uno en su rama. Cuando un punto se termina, se quita de aquí. El bloque 1 (quick wins) y el 3.1 están hechos.
 
 ### Bloque 2: hard wins (difíciles pero aportan mucho)
 - **2.1 Celebración que no se pierde.** Se cierra en la entrevista de front.
@@ -65,15 +47,12 @@ Sale de la revisión del 12 nov 2026. Tres bloques, en este orden, cada uno en s
   - Cómo: primero medirlo contra la rama `dev` de Neon; si pesa, cargar el historial y las medallas de todos los hábitos de una vez.
 - **2.6 Tests de regresión y con datos aleatorios.**
   - Por qué: un cambio en las reglas de medallas o rachas puede alterar resultados sin que ningún test lo note.
-  - Cómo: un export fijo con las medallas que debe dar, y tests con datos aleatorios en periodos, rachas y umbrales.
+  - Cómo: los datos del script de prueba (siempre los mismos) con las medallas que deben dar, y tests con datos aleatorios en periodos, rachas y umbrales.
 - **2.7 Lógica fuera de los routers.** Junto a 2.1 y 2.2.
   - Por qué: los routers de sesiones y medallas llevan reglas de negocio, y 2.1 y 2.2 tocan justo esas funciones.
   - Cómo: moverlas a los servicios, como ya está hecho con las etiquetas.
 
 ### Bloque 3: quick fixes (aportan poco, pero hay que hacerlos y son rápidos)
-- **3.1 Error del servidor en los umbrales sugeridos.**
-  - Por qué: un valor infinito provoca un error interno en vez de un rechazo.
-  - Cómo: rechazar infinitos y no-números en los parámetros de entrada.
 - **3.2 Valores negativos.**
   - Por qué: una duración negativa se acepta y resta en las medallas.
   - Cómo: no admitir duraciones negativas (las métricas de número, según la decisión abierta).
@@ -89,9 +68,9 @@ Sale de la revisión del 12 nov 2026. Tres bloques, en este orden, cada uno en s
 - **3.6 Limpieza.**
   - Por qué: código que no se usa o está duplicado.
   - Cómo: quitar una relación entre tablas que no se usa, que los tests usen la sesión de BBDD real de la app en vez de una copia, y separar las reglas de las medallas de los formatos de la API.
-- **3.7 Lo que quedó sin verificar en la revisión.**
-  - Por qué: no se pudo pasar el linter ni probar contra la rama `dev` de Neon.
-  - Cómo: añadir el linter a las dependencias de desarrollo y a la integración continua, y hacer la prueba de punta a punta junto con la medición de 2.5.
+- **3.7 Prueba de punta a punta contra la rama `dev` de Neon.**
+  - Por qué: quedó sin hacer en la revisión; los tests usan SQLite y un Postgres local, no Neon.
+  - Cómo: con los datos del script de prueba, recorrer la API con el usuario `demo`, junto con la medición de 2.5.
 - **3.8 README y etiqueta de versión.**
   - Por qué: el README hará falta para montar un clon a alguien; la etiqueta marca qué código está desplegado.
   - Cómo: un README corto con los pasos de instalación y una etiqueta de git en el primer despliegue.

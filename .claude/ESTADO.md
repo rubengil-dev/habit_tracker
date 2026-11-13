@@ -4,7 +4,7 @@
 - **Se actualiza:** al cerrar cada sesión.
 
 ## Próxima sesión
-**Probar contra la rama `dev` de Neon y seguir con el bloque 2 del plan**: ejecutar yo el script de datos de prueba (pide teclear `dev` y la contraseña del usuario `demo`), prueba de la API de punta a punta con esos datos y medición de las consultas (3.7 y 2.5), y tests de regresión (2.6). Antes de tocar 3.2 hay que cerrar las decisiones de "Revisión" de más abajo.
+**Probar contra la rama `dev` de Neon**: aplicar yo la migración nueva (sin negativos e histórica siempre ascendente) y ejecutar el script de datos de prueba (pide teclear `dev` y la contraseña del usuario `demo`); después, prueba de la API de punta a punta con esos datos y medición de las consultas (3.7 y 2.5).
 
 ## Sesión siguiente
 **Entrevista de front** (bloque 5): diseño del frontend en conjunto y arranque. En ella se cierran los puntos 2.1 y 2.2 del plan, que cambian lo que la API le devuelve al front.
@@ -23,11 +23,12 @@ Backend rediseñado, con sus casos cubiertos por los tests y probado también co
 - Recálculo de medallas al escribir y al leer, racha y mejor racha, progreso del periodo en curso y umbrales sugeridos.
 - Vista del día y exportar.
 - Todas las rutas bajo `/api`, y todos los errores con un código fijo para el front.
-- Integración continua en cada push (linter, tests en SQLite y en Postgres) y script de datos de prueba.
-- Migración aplicada en la rama `dev` de Neon, con mi usuario creado.
+- Integración continua en cada push (linter, tests en SQLite y en Postgres), con tests de regresión sobre los datos de prueba y tests con datos aleatorios en periodos, rachas y umbrales.
+- Sin valores negativos, histórica siempre ascendente y sin histórica sobre un ritmo.
+- Migración inicial aplicada en la rama `dev` de Neon, con mi usuario creado (la segunda, pendiente).
 
 ## Plan de mejoras
-Sale de la revisión del 12 nov 2026. Tres bloques, en este orden, cada uno en su rama. Cuando un punto se termina, se quita de aquí. El bloque 1 (quick wins) y el 3.1 están hechos.
+Sale de la revisión del 12 nov 2026. Tres bloques, en este orden, cada uno en su rama. Cuando un punto se termina, se quita de aquí. Hechos: el bloque 1 (quick wins), el 2.6 y, del bloque 3, el 3.1, 3.2, 3.3 y 3.6.
 
 ### Bloque 2: hard wins (difíciles pero aportan mucho)
 - **2.1 Celebración que no se pierde.** Se cierra en la entrevista de front.
@@ -45,29 +46,17 @@ Sale de la revisión del 12 nov 2026. Tres bloques, en este orden, cada uno en s
 - **2.5 Consultas en una pasada.**
   - Por qué: la vista del día y la de medallas hacen varias consultas por cada hábito, y son las que se abren a diario.
   - Cómo: primero medirlo contra la rama `dev` de Neon; si pesa, cargar el historial y las medallas de todos los hábitos de una vez.
-- **2.6 Tests de regresión y con datos aleatorios.**
-  - Por qué: un cambio en las reglas de medallas o rachas puede alterar resultados sin que ningún test lo note.
-  - Cómo: los datos del script de prueba (siempre los mismos) con las medallas que deben dar, y tests con datos aleatorios en periodos, rachas y umbrales.
 - **2.7 Lógica fuera de los routers.** Junto a 2.1 y 2.2.
   - Por qué: los routers de sesiones y medallas llevan reglas de negocio, y 2.1 y 2.2 tocan justo esas funciones.
   - Cómo: moverlas a los servicios, como ya está hecho con las etiquetas.
 
 ### Bloque 3: quick fixes (aportan poco, pero hay que hacerlos y son rápidos)
-- **3.2 Valores negativos.**
-  - Por qué: una duración negativa se acepta y resta en las medallas.
-  - Cómo: no admitir duraciones negativas (las métricas de número, según la decisión abierta).
-- **3.3 Histórica sobre un ritmo.**
-  - Por qué: se puede crear una medalla que suma ritmos, que no significa nada.
-  - Cómo: rechazarla al crear la medalla.
 - **3.4 Documentación de la API cerrada en producción.** Al desplegar.
   - Por qué: la documentación automática enseña toda la API sin iniciar sesión.
   - Cómo: una variable de entorno que la apague en Vercel.
 - **3.5 Conexiones en serverless.** Al desplegar.
   - Por qué: el motor guarda conexiones abiertas en cada instancia, mala combinación con funciones serverless y el pooling de Neon.
   - Cómo: no guardar conexiones en producción y comprobar que el driver funciona con el pooling.
-- **3.6 Limpieza.**
-  - Por qué: código que no se usa o está duplicado.
-  - Cómo: quitar una relación entre tablas que no se usa, que los tests usen la sesión de BBDD real de la app en vez de una copia, y separar las reglas de las medallas de los formatos de la API.
 - **3.7 Prueba de punta a punta contra la rama `dev` de Neon.**
   - Por qué: quedó sin hacer en la revisión; los tests usan SQLite y un Postgres local, no Neon.
   - Cómo: con los datos del script de prueba, recorrer la API con el usuario `demo`, junto con la medición de 2.5.
@@ -83,10 +72,6 @@ Sale de la revisión del 12 nov 2026. Tres bloques, en este orden, cada uno en s
 - **Fase 2, prioridad**: el bloqueo del login es por usuario, así que quien conozca un nombre de usuario puede tenerlo bloqueado a base de fallos. Añadir otra defensa (p. ej. límite por IP) antes de abrir la app a más gente.
 
 ### Decisiones abiertas
-Revisión (antes de empezar el plan):
-- Histórica con "menor es mejor": al ser una suma, empieza en diamante y solo puede bajar. ¿Se queda así o se prohíbe?
-- ¿Puede ser negativa una métrica de número? (plan, 3.2)
-
 Frontend (bloque 5, al empezar el frontend):
 - Pantallas, diseño visual y retroalimentación visual (animaciones; ¿vibración o sonido?). Hay un esqueleto propuesto por Claude: Hoy, Registrar, Medallas, Detalle del hábito y Configuración.
 - Cómo se muestra la mejor racha.
@@ -100,4 +85,4 @@ Fase 2:
 - Implicaciones legales de guardar datos de otros, antes de abrir la app fuera de familia y amigos cercanos.
 
 ## Pendiente de probar yo
-Nada.
+- La migración nueva en la rama `dev` de Neon (`uv run alembic upgrade head`): falla si ya hay algún valor negativo o alguna histórica con "menor es mejor".

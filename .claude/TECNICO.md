@@ -11,7 +11,7 @@
 ## Entorno
 - Python 3.14 y dependencias con uv: `pyproject.toml` (qué hace falta), `uv.lock` (versiones exactas) y `.python-version`. El entorno vive en `.venv` y `uv sync` lo recrea.
 - Al añadir una librería: `uv add <librería>`, o `uv add --dev <librería>` si solo sirve para desarrollar.
-- Librerías clave: FastAPI, SQLAlchemy 2.1, Pydantic 2, psycopg 3 (driver de Postgres), Alembic, pydantic-settings (lee el `.env`), pwdlib con Argon2 (contraseñas) y tzdata (zonas horarias, que Windows no trae). Solo para desarrollar: pytest, pytest-cov (cobertura), ruff (linter), httpx2 (cliente de pruebas de FastAPI) y uvicorn.
+- Librerías clave: FastAPI, SQLAlchemy 2.1, Pydantic 2, psycopg 3 (driver de Postgres), Alembic, pydantic-settings (lee el `.env`), pwdlib con Argon2 (contraseñas) y tzdata (zonas horarias, que Windows no trae). Solo para desarrollar: pytest, pytest-cov (cobertura), hypothesis (tests con datos aleatorios), ruff (linter), httpx2 (cliente de pruebas de FastAPI) y uvicorn.
 - Ruff, configurado en `pyproject.toml`, solo busca fallos reales (errores, nombres sin definir o sin usar, bugs probables), no estilo: el estilo lo marca `ESTILO.md`.
 - Docker Desktop (para un Postgres de usar y tirar): no arranca solo con Windows. En Git Bash, los comandos `docker` con rutas Linux necesitan `MSYS_NO_PATHCONV=1` delante: si no, Git Bash convierte `/var/...` en una ruta de Windows.
 - Configuración: la variable `DATABASE_URL`, en el `.env` de la raíz (plantilla sin secretos en `.env.example`). La cadena de Neon se pega tal cual: el código le añade el driver.
@@ -20,7 +20,7 @@
 ## Comandos
 Todos desde la raíz del proyecto:
 - Servidor: `uv run uvicorn app.main:app --reload`. API en `http://localhost:8000/api/...`; Swagger en `http://localhost:8000/docs`.
-- Tests: `uv run pytest` (con cobertura: `--cov=app`). Para pasarlos contra Postgres, la variable `TEST_DATABASE_URL` con una BBDD de usar y tirar: los tests borran todas sus tablas, y se niegan a arrancar si es la del `.env`.
+- Tests: `uv run pytest` (con cobertura: `--cov=app`). Un aviso de SQLAlchemy hace fallar el test (`pyproject.toml`). Para pasarlos contra Postgres, la variable `TEST_DATABASE_URL` con una BBDD de usar y tirar: los tests borran todas sus tablas, y se niegan a arrancar si es la del `.env`.
 - Postgres de usar y tirar (con Docker Desktop abierto): `MSYS_NO_PATHCONV=1 docker run -d --rm --name habit-test-pg -e POSTGRES_PASSWORD=test -e POSTGRES_DB=habit_test -p 55432:5432 --tmpfs /var/lib/postgresql/data postgres:17-alpine`, y `TEST_DATABASE_URL=postgresql://postgres:test@localhost:55432/habit_test`. `docker stop habit-test-pg` lo borra.
 - Linter: `uv run ruff check app tests scripts migrations`.
 - Integración continua: `.github/workflows/tests.yml` pasa en cada push el linter, los tests en SQLite (mínimo 95 % de cobertura de `app/`) y los tests contra un Postgres de GitHub.
@@ -33,14 +33,14 @@ Todos desde la raíz del proyecto:
   - `main.py`: crea la app, registra los routers bajo `/api` y los manejadores globales de errores (HTTP, integridad y validación), todos con la forma de "Errores".
   - `errors.py`: `ApiError` (error con código) y los códigos de los errores que no lanza la app (framework, validación y reglas de la BBDD).
   - `config.py`: variables de entorno, leídas del `.env` de la raíz la primera vez que se usan.
-  - `database.py`: clase base de las tablas (con nombres fijos para las restricciones, que necesita Alembic), motor de Postgres y sesión por petición con `rollback` ante cualquier excepción.
-  - `enums.py`, `models.py` (tablas) y `schemas.py` (formatos de entrada y salida de la API, reglas de las medallas y la validación de una edición como elemento completo).
+  - `database.py`: clase base de las tablas (con nombres fijos para las restricciones, que necesita Alembic), motor de Postgres (`get_engine`) y sesión por petición con `rollback` ante cualquier excepción (`get_db`, que recibe el motor como dependencia: los tests solo cambian el motor).
+  - `enums.py`, `models.py` (tablas) y `schemas.py` (formatos de entrada y salida de la API y la validación de una edición como elemento completo).
   - `dependencies.py`: lo que comparten los endpoints: el usuario de la cookie (401 si no hay), su "hoy", las filas de la ruta que son suyas (404 si no) y las filas que menciona un cuerpo (404 si no existen, 400 si son de otro hábito).
   - `routers/`: un archivo por entidad (`auth`, `habits`, `metrics`, `tags`, `entries`, `badges`), más `today` (vista del día) y `export`.
-  - `services/`: lógica de negocio: `periods` (periodos naturales y el "hoy" del usuario), `tiers` (nivel de un valor, umbrales sugeridos y qué medallas cuentan), `history` (carga las sesiones de un hábito), `ratios`, `streaks` (periodos cumplidos, rachas y objetivo en curso), `badges` (valor, progreso y recálculo), `tags` (borrado) y `auth` (contraseñas, sesiones y bloqueo).
+  - `services/`: lógica de negocio: `periods` (periodos naturales y el "hoy" del usuario), `tiers` (nivel de un valor, umbrales sugeridos y qué medallas cuentan), `badge_rules` (reglas de una medalla: campos por tipo, filtros de etiquetas, umbrales y métrica que puede usar), `history` (carga las sesiones de un hábito), `ratios`, `streaks` (periodos cumplidos, rachas y objetivo en curso), `badges` (valor, progreso y recálculo), `tags` (borrado) y `auth` (contraseñas, sesiones y bloqueo).
   - `utils/`: herramientas sin reglas de negocio, un archivo por tema: `numbers` (quitar el ruido de los decimales).
 - `migrations/`: Alembic. `env.py` conecta con la BBDD del `.env` y compara con `models.py`; `versions/` guarda un archivo por cambio, con fecha y descripción en el nombre; `script.py.mako` es la plantilla de esos archivos.
-- `tests/`: pytest. `conftest.py` (BBDD vacía por test, hábito de prueba, clientes de la API con el "hoy" fijo y rutas relativas a `/api`, y la protección contra la BBDD del `.env`), `helpers.py` y un `test_<tema>.py` por servicio, por router, por script y para los errores.
+- `tests/`: pytest. `conftest.py` (BBDD vacía por test, hábito de prueba, clientes de la API con el "hoy" fijo, rutas relativas a `/api` y el `get_db` real de la app sobre la BBDD de prueba, y la protección contra la BBDD del `.env`), `helpers.py` y un `test_<tema>.py` por servicio, por router, por script y para los errores. Los de periodos, rachas y umbrales incluyen tests con datos aleatorios (hypothesis). `test_regression.py`: rachas y medallas que deben dar los datos de prueba.
 - `scripts/`: `create_user.py` (crear usuarios o cambiar contraseñas) y `seed_dev.py` (usuario `demo` con datos de prueba).
 - `.github/workflows/tests.yml`: integración continua.
 
@@ -52,9 +52,9 @@ Diez tablas, con UUID. Todas las claves ajenas tienen `ON DELETE CASCADE` e índ
 - **metrics:** hábito, nombre (único por hábito), unidad (opcional) y tipo: número, duración (segundos) o ritmo, con sus operandos A y B, distintos.
 - **tags:** hábito y nombre (único por hábito).
 - **entries** (sesiones): hábito y fecha.
-- **entry_values:** sesión, métrica y valor. Una fila por métrica rellenada, ritmos incluidos.
+- **entry_values:** sesión, métrica y valor (nunca negativo). Una fila por métrica rellenada, ritmos incluidos.
 - **entry_tags:** sesión y etiqueta.
-- **badges:** hábito, métrica (opcional según el tipo), nombre, tipo, mayor es mejor, listón, periodo, objetivo y modo (constancia y racha), solo sesiones sin etiquetas, los cinco umbrales (desbloqueada a diamante) y el valor y nivel actuales. Restricciones: campos que necesita cada tipo y orden de los umbrales.
+- **badges:** hábito, métrica (opcional según el tipo), nombre, tipo, mayor es mejor, listón, periodo, objetivo y modo (constancia y racha), solo sesiones sin etiquetas, los cinco umbrales (desbloqueada a diamante) y el valor y nivel actuales. Restricciones: campos que necesita cada tipo, histórica siempre con "mayor es mejor" y orden de los umbrales (descendentes solo en el récord con "menor es mejor").
 - **badge_tags:** medalla, etiqueta y regla (obligatoria o excluida). Una regla por etiqueta y medalla.
 
 ## Endpoints
@@ -83,18 +83,20 @@ Toda respuesta de error es `{"detail": texto, "code": código}`. El front elige 
 | `sessions_before_start` | 400    | Fecha de inicio que dejaría sesiones antes                    |
 | `calculated_metric`     | 400    | Valor escrito a mano en un ritmo                              |
 | `ratio_of_ratio`        | 400    | Ritmo que usa otro ritmo                                      |
+| `historic_of_ratio`     | 400    | Medalla histórica sobre un ritmo (sumar ritmos no significa nada) |
 | `duplicate_name`        | 409    | Nombre repetido                                               |
 | `integrity_error`       | 400    | Cualquier otra regla de la BBDD (no debería llegar: la API valida antes) |
-| `invalid_range`         | 422    | Extremos de los umbrales sugeridos que no sirven              |
+| `invalid_range`         | 422    | Extremos de los umbrales sugeridos que no sirven (también si están tan cerca que se repetirían) |
 | `validation_error`      | 422    | Cuerpo o parámetro que rompe una regla del formato            |
 | `http_error`            | otros  | Cualquier otro error del framework                            |
 
 ## Contratos de las funciones
 - `period_start(day, period)`, `next_period_start(start, period)`, `period_end(day, period)` y `period_starts(first, last, period)`: periodos naturales, identificados por su primer día. `local_today(timezone, now)`: el "hoy" del usuario.
-- `tier_for(badge, value)`: nivel de un valor; sin valor, bloqueada. `suggest_tiers(first, diamond, whole=False)`: los cinco umbrales. `is_count(badge)`: si su valor cuenta sesiones o periodos (umbrales enteros).
+- `tier_for(badge, value)`: nivel de un valor; sin valor, bloqueada. `suggest_tiers(first, diamond, whole=False)`: los cinco umbrales. `is_count(badge)`: si su valor cuenta sesiones o periodos (umbrales enteros). `is_descending(badge)`: solo el récord con "menor es mejor".
+- `check_badge(badge)` y `check_metric_fits(kind, metric_kind)`: reglas de una medalla; lanzan `ValueError` (422 en el schema, 400 `historic_of_ratio` en el router).
 - `drop_float_noise(value)`: redondea a 12 cifras significativas (0,1 + 0,7 → 0,8). Lo usan la suma de las históricas, los ritmos y los umbrales sugeridos.
 - `check_as_whole(schema, row, changes, extra)`: valida una edición parcial como si fuera un elemento nuevo (422 si rompe una regla).
-- `seed(db, password, today)`: rehace el usuario `demo` con sus datos de prueba.
+- `seed(db, password, today)`: rehace el usuario `demo` con sus datos de prueba, siempre los mismos para un mismo `today` (lo usa `test_regression.py`).
 - `load_history(db, habit_id)` → lista de `EntryFacts` (fecha, valores por métrica y etiquetas): lo único que leen rachas y medallas.
 - `ratio_value(values, metric)`, `refresh_ratios(entry, ratios)` y `backfill_ratio(db, metric)`.
 - `period_outcomes(dates, period, target, mode, start, today)` → cumplido, fallado o abierto en cada periodo desde la fecha de inicio; `streaks(outcomes)` → (actual, mejor); `habit_streaks(habit, history, today)` y `goal_so_far(habit, history, today)`.
@@ -110,4 +112,5 @@ Toda respuesta de error es `{"detail": texto, "code": código}`. El front elige 
 - Una migración autogenerada copiaría `UTCDateTime`, que solo existe en la app: `render_item` en `env.py` lo cambia por el tipo estándar.
 - En `routers/badges.py`, `/badges/suggest-tiers` va antes que `/badges/{badge_id}`: al revés, "suggest-tiers" se leería como un id.
 - En los tests, `client` y `anon_client` son el mismo cliente (el primero es el segundo con la cookie puesta): no se pueden usar los dos en un mismo test.
-- `seed_dev.py` escribe directamente en la BBDD, sin pasar por la API: `test_seed.py` comprueba que todo lo que crea cumple las reglas de la API.
+- `seed_dev.py` escribe directamente en la BBDD, sin pasar por la API: `test_seed.py` comprueba que todo lo que crea cumple las reglas de la API. Si se cambian sus datos, cambian los valores esperados de `test_regression.py`.
+- Al borrar una etiqueta, las medallas que la usan se borran y se hace `flush` antes de borrar la etiqueta: si no, la cascada de la BBDD se adelanta y SQLAlchemy avisa de que no encontró las reglas que iba a borrar.

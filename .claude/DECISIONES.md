@@ -23,6 +23,10 @@ Donde el porqué dice "por recuperar", la decisión consta pero su motivo no se 
 - **Decisión:** integración continua en GitHub Actions en cada push: linter, tests en SQLite con un mínimo del 95 % de cobertura del código de la app, y tests contra Postgres. El linter (Ruff) solo busca fallos reales, no estilo.
 - **Por qué:** los tests se pasaban solo a mano, y el de migraciones se saltaba siempre en local. El estilo ya lo fija `ESTILO.md`, y las reglas de estilo de Ruff chocaban con él (orden de imports, tablas alineadas con `dict(...)`, `Depends` de FastAPI).
 
+### ¿Cómo se vigila que no cambien los resultados de medallas y rachas?
+- **Decisión:** dos tipos de test además de los de casos concretos. De regresión: los datos de prueba (siempre los mismos) con las rachas y las medallas que deben dar; si un cambio las mueve a propósito, se revisan a mano y se actualizan. Con datos aleatorios (hypothesis), en periodos, rachas y umbrales: propiedades que deben cumplirse con cualquier dato (un periodo contiene su día, una sesión más nunca baja una racha, un valor mejor nunca da un nivel más bajo).
+- **Por qué:** un cambio en las reglas podía alterar resultados sin que ningún test lo notara, porque cada test mira un caso. Los aleatorios encuentran casos que nadie escribiría: el primero que se lanzó destapó umbrales sugeridos repetidos con extremos casi iguales.
+
 ### ¿Cómo se generan datos de prueba?
 - **Decisión:** un script rehace desde cero un usuario `demo` en la rama `dev`, siempre con los mismos datos, sin tocar a ningún otro usuario. Antes de escribir pide teclear el nombre de la rama de Neon (`dev`), y la contraseña del usuario `demo` se pide al ejecutarlo; no está escrita en ningún sitio.
 - **Por qué:** el front necesita hábitos con meses de historial, y un usuario aparte no mezcla esos datos con los míos de `dev`. La URL de Neon no dice a qué rama apunta, así que el script no puede negarse solo; la confirmación tecleada obliga a mirarlo. Sin contraseña fija, ejecutarlo por error en producción no deja una cuenta con una contraseña conocida.
@@ -67,6 +71,10 @@ Donde el porqué dice "por recuperar", la decisión consta pero su motivo no se 
 - **Decisión:** número, duración y ritmo. El ritmo es la calculada (A ÷ B): un tipo más, no una métrica con un campo de cálculo aparte. La duración se guarda en segundos; el front la introduce y la muestra como minutos y segundos.
 - **Por qué:** un tipo de métrica en vez de "calculada sí/no + tipo de cálculo" es lo mismo con un campo menos. Los segundos van en una sola columna, fácil de sumar y comparar.
 
+### ¿Puede ser negativo un valor?
+- **Decisión:** no. Ningún valor de una sesión (número o duración) ni el listón de una medalla puede ser negativo; 0 sí. Lo rechazan la API (422) y la BBDD. Lo que se mediría en negativo se apunta en positivo: el peso actual en vez de la variación, el ánimo de 1 a 10, o dos métricas (ganado y perdido).
+- **Por qué:** con negativos, una histórica podría bajar de nivel (frustra), un ritmo saldría negativo (no significa nada) y los umbrales sugeridos no servirían, porque exigen extremos positivos. Los casos legítimos son raros y todos tienen versión en positivo. Si algún día hace falta una variación, encaja como un tipo nuevo de métrica calculada ("respecto a la sesión anterior") sin abrir los negativos a mano. Se descartó una opción por métrica: migración y un campo más para un caso raro, y esas métricas tampoco podrían usarse en ritmos ni en históricas.
+
 ### ¿Cómo funcionan las métricas calculadas?
 - **Decisión:** se calculan al guardar la sesión y se guardan con ella; quedan vacías si falta A o B, o si B es 0. A y B no pueden ser calculadas. El valor se guarda en las unidades crudas (p. ej. segundos por km) y el front lo convierte al mostrarlo, igual que los segundos. De momento solo existe el tipo ritmo (A ÷ B).
 - **Por qué:** guardarlas permite verlas en cada sesión y usarlas en medallas; con sesiones, calcularlas al guardar es trivial, sin motor aparte. Se descartaron la fórmula de texto libre (difícil de interpretar con seguridad, validar y mostrar con unidades) y poder rellenarlas a mano a veces, que era lo que la complicaba. Que una calculada no use otra evita bucles. Los tipos porcentaje y producto se propusieron y no convencieron.
@@ -100,8 +108,12 @@ Donde el porqué dice "por recuperar", la decisión consta pero su motivo no se 
 - **Por qué:** defensa en profundidad: la restricción de la BBDD cubre cualquier escritura que se salte la API (p. ej. una futura importación).
 
 ### ¿Cómo se ordenan los niveles de una medalla?
-- **Decisión:** en objetivo, constancia y racha, siempre ascendentes: el valor es un conteo (sesiones que superan el listón, periodos cumplidos o periodos seguidos), no el valor crudo. En ellas, "mayor es mejor" solo decide el sentido del filtro contra el listón (`>=` / `<=`). En histórica y récord, ascendentes o descendentes según "mayor es mejor". "Mayor es mejor" va en cada medalla, no en la métrica.
-- **Por qué:** un conteo más alto siempre es mejor. La misma métrica puede ser buena alta en una medalla (la sesión más larga) y baja en otra (el sprint más rápido).
+- **Decisión:** en objetivo, constancia y racha, siempre ascendentes: el valor es un conteo (sesiones que superan el listón, periodos cumplidos o periodos seguidos), no el valor crudo. En ellas, "mayor es mejor" solo decide el sentido del filtro contra el listón (`>=` / `<=`). En la histórica, siempre ascendentes: "menor es mejor" se rechaza. En el récord, ascendentes o descendentes según "mayor es mejor". "Mayor es mejor" va en cada medalla, no en la métrica.
+- **Por qué:** un conteo más alto siempre es mejor. Una histórica es una suma, que solo crece: con "menor es mejor" empezaba en diamante y solo podía bajar. La misma métrica puede ser buena alta en una medalla (la sesión más larga) y baja en otra (el sprint más rápido).
+
+### ¿Qué métricas puede usar una medalla?
+- **Decisión:** cualquiera de su hábito, salvo la histórica sobre un ritmo, que se rechaza al crearla (400). Récord, objetivo, constancia y racha sobre un ritmo sí valen.
+- **Por qué:** la histórica suma su métrica, y sumar ritmos no significa nada.
 
 ### ¿Para qué sirve que un hábito esté activo?
 - **Decisión:** para filtrar en el panel visual y mostrar solo los activos sin borrar nada.
@@ -143,7 +155,7 @@ Donde el porqué dice "por recuperar", la decisión consta pero su motivo no se 
 - **Por qué:** no castigar un periodo que aún se puede cumplir. Se descartó romper la racha por "imposibilidad matemática de cumplir el periodo actual": complica la técnica sin necesidad y asumiría como máximo un registro útil al día. En modo evitar, un periodo abierto aún se puede fallar (sumarlo a medianoche sería premiar sin haber hecho nada), y uno que ya ha pasado del máximo no tiene arreglo.
 
 ### ¿Dónde se calculan los umbrales sugeridos?
-- **Decisión:** en el backend, con un endpoint. Progresión exponencial entre el primer umbral y el de diamante, redondeada a números redondos (1, 2, 3 o 5 por una potencia de 10) mientras sigan en orden; si se repetirían, redondea menos. Con la opción de enteros, solo propone enteros: redondos si caben y, si no, los enteros más cercanos separados al menos en 1; si no caben cinco distintos, lo rechaza.
+- **Decisión:** en el backend, con un endpoint. Progresión exponencial entre el primer umbral y el de diamante, redondeada a números redondos (1, 2, 3 o 5 por una potencia de 10) mientras sigan en orden; si se repetirían, redondea menos. Con la opción de enteros, solo propone enteros: redondos si caben y, si no, los enteros más cercanos separados al menos en 1; si no caben cinco distintos, lo rechaza. Sin ella, si los extremos están tan cerca que los intermedios se repetirían, también lo rechaza.
 - **Por qué:** es Python, se prueba con pytest y lo puedo leer. Los enteros, porque en rangos estrechos salían umbrales como "1,5 semanas".
 
 ### ¿Qué medallas llevan umbrales enteros?

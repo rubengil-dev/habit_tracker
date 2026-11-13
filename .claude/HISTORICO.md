@@ -3,6 +3,15 @@
 - **No contiene:** cifras, decisiones con su porqué ni el estado actual.
 - **Se actualiza:** al cerrar cada sesión, después del commit del trabajo.
 
+## 2026-11-12 y 13: revisión completa y bloque 1 del plan de mejoras
+- Revisión completa del proyecto (la última hasta ahora): tests y cobertura, pruebas de la API sobre una copia en memoria y propuesta de MLOps. Resultado: plan de mejoras en tres bloques, apuntado en `ESTADO.md`. DVC y MLflow descartados por ahora: no hay datasets ni modelos.
+- Bloque 1 del plan, en la rama `mejoras-bloque-1`, fusionada en `main`:
+  - Creado: `app/errors.py` (errores con código), `app/utils/numbers.py` (ruido de los decimales), `scripts/seed_dev.py` (usuario `demo` con datos de prueba), `.github/workflows/tests.yml` (integración continua) y los tests `test_api_errors.py` y `test_seed.py`.
+  - Cambiado: rutas bajo `/api`; todos los errores con código y nombres repetidos en 409; edición de un hábito validada entera; umbrales enteros en las medallas que cuentan y opción de enteros en los sugeridos; suma de históricas y ritmos sin ruido de decimales; `suggest-tiers` rechaza `inf` y `nan` (punto 3.1). Añadidos `pytest-cov` y `ruff` (solo fallos reales).
+  - Probado en SQLite, en un Postgres de Docker y en el CI de GitHub, que pasa a la primera. Sin probar: el script de datos contra la rama `dev` de Neon.
+- `.claude/`: `ESTADO.md` con el plan y luego sin el bloque 1; `TECNICO.md` con comandos, estructura y códigos de error; `DECISIONES.md` con seis decisiones nuevas y dos actualizadas.
+- Commits: `046a775` (plan en `ESTADO.md`), `5ba533b` (código del bloque 1) y `2dbb726` (archivos de Claude). El commit que guarda esta entrada no puede llevar su propio hash: es el último de `git log`.
+
 ## 2026-10-26 y 27: rediseño del backend
 - Entorno: uv con Python 3.14; condiciones de los planes gratuitos de Vercel y Neon verificadas; cuenta de Neon con las ramas `production` y `dev`, migración inicial aplicada en `dev` y mi usuario creado.
 - Rediseño del backend en la rama `redesign`, por paradas revisadas una a una, y fusionado en `main`:

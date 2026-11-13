@@ -71,10 +71,20 @@ def test_ratio_needs_two_different_operands(db, habit):
     assert count(db, Metric) == 3
 
 
+def test_values_not_negative(db, habit):
+    """A session value below 0 is stopped by the database; 0 is fine."""
+    distance, entry, rain = build_history(db, habit)
+    time = add(db, Metric(habit_id=habit.id, name="Time", kind=MetricKind.DURATION))
+
+    assert_rejected(db, EntryValue(entry_id=entry.id, metric_id=time.id, value=-1))
+    add(db, EntryValue(entry_id=entry.id, metric_id=time.id, value=0))
+    assert count(db, EntryValue) == 2
+
+
 # Badges
 
 def test_tiers_order(db, habit):
-    """Counts always go up; historic and record go down only when lower is better."""
+    """Sums and counts always go up; records go down only when lower is better."""
     pace = add(db, Metric(habit_id=habit.id, name="Pace", kind=MetricKind.NUMBER))
 
     # Valid
@@ -83,6 +93,10 @@ def test_tiers_order(db, habit):
 
     # Lower is better, but tiers going up
     assert_rejected(db, Badge(habit_id=habit.id, metric_id=pace.id, name="Bad", kind=BadgeKind.RECORD, higher_is_better=False, **ASCENDING))
+
+    # A historic badge is a sum: never lower is better, whatever its tiers
+    assert_rejected(db, Badge(habit_id=habit.id, metric_id=pace.id, name="Bad", kind=BadgeKind.HISTORIC, higher_is_better=False, **DESCENDING))
+    assert_rejected(db, Badge(habit_id=habit.id, metric_id=pace.id, name="Bad", kind=BadgeKind.HISTORIC, higher_is_better=False, **ASCENDING))
 
     # A count with tiers going down, even if lower is better for its bar
     assert_rejected(db, Badge(

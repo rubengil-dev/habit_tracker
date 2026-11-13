@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
 from app.config import get_settings, sqlalchemy_url
-from app.database import Base, get_db
+from app.database import Base, get_engine
 from app.dependencies import COOKIE_NAME, user_today
 from app.enums import BadgeKind, MetricKind, Period
 from app.main import API_PREFIX, app
@@ -87,8 +87,9 @@ def anon_client(engine):
     API client without a session:
         - https, so the secure cookie travels
         - Paths relative to /api: client.get("/habits") → /api/habits
+        - The app's own sessions per request, on the test database
     """
-    app.dependency_overrides[get_db] = sessions_on(engine)
+    app.dependency_overrides[get_engine] = lambda: engine
     app.dependency_overrides[user_today] = lambda: TODAY
 
     with TestClient(app, base_url=f"https://testserver{API_PREFIX}") as client:
@@ -114,20 +115,6 @@ def set_today():
     def move(day: dt.date):
         app.dependency_overrides[user_today] = lambda: day
     return move
-
-
-def sessions_on(engine):
-    """get_db for the tests: one session per request on the test database."""
-    def get_test_db():
-        db = Session(engine)
-        try:
-            yield db
-        except Exception:
-            db.rollback()
-            raise
-        finally:
-            db.close()
-    return get_test_db
 
 
 def build_engine(url: str):

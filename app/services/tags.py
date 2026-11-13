@@ -19,6 +19,8 @@ def delete_tag(db: Session, tag: Tag, today: dt.date):
 
     for badge in badges_using(db, tag):
         db.delete(badge)
+    db.flush()                  # Badges and their tag rules first: the tag's cascade would leave them nothing to delete
+
     db.delete(tag)
     db.flush()
 

@@ -24,8 +24,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 from app.enums import BadgeKind, GoalMode, MetricKind, Period, TagRule, Tier
 
-# Tiers order: descending only in historic and record when lower is better
-DESCENDING = "kind IN ('historic', 'record') AND higher_is_better = false"
+# Tiers order: descending only in records when lower is better
+DESCENDING = "kind = 'record' AND higher_is_better = false"
 ASCENDING_TIERS = "0 < unlocked AND unlocked < bronze AND bronze < silver AND silver < gold AND gold < diamond"
 DESCENDING_TIERS = "unlocked > bronze AND bronze > silver AND silver > gold AND gold > diamond AND diamond > 0"
 
@@ -192,6 +192,9 @@ class EntryValue(Base):
     metric_id: Mapped[UUID] = mapped_column(ForeignKey("metrics.id", ondelete="CASCADE"), primary_key=True, index=True)
     value: Mapped[float]            # Durations in seconds; ratios in raw units (A ÷ B)
 
+    # Constraints
+    __table_args__ = (CheckConstraint("value >= 0", name="value_not_negative"),)
+
 
 # Badges
 
@@ -227,6 +230,7 @@ class Badge(Entity, Base):
     # Constraints
     __table_args__ = (
         CheckConstraint(f"(({DESCENDING}) AND {DESCENDING_TIERS}) OR (NOT ({DESCENDING}) AND {ASCENDING_TIERS})", name="tiers_order"),
+        CheckConstraint("kind <> 'historic' OR higher_is_better = true", name="historic_goes_up"),
         CheckConstraint("kind <> 'record' OR metric_id IS NOT NULL", name="record_needs_metric"),
         CheckConstraint("kind <> 'objective' OR threshold IS NOT NULL", name="objective_needs_threshold"),
         CheckConstraint("threshold IS NULL OR metric_id IS NOT NULL", name="threshold_needs_metric"),
@@ -245,6 +249,3 @@ class BadgeTag(Base):
     badge_id: Mapped[UUID] = mapped_column(ForeignKey("badges.id", ondelete="CASCADE"), primary_key=True)
     tag_id: Mapped[UUID] = mapped_column(ForeignKey("tags.id", ondelete="CASCADE"), primary_key=True, index=True)
     rule: Mapped[TagRule] = mapped_column(enum_type(TagRule, "tag_rule"))
-
-    # Parent
-    tag: Mapped["Tag"] = relationship(lazy="joined")

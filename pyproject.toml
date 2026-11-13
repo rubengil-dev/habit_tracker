@@ -15,6 +15,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "httpx2>=2.16.0",
+    "hypothesis>=6.170.15",
     "pytest>=9.1.1",
     "pytest-cov>=7.1.0",
     "ruff>=0.17.5",
@@ -32,3 +33,4 @@ ignore = ["B008"]                           # Depends() in default arguments is 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+filterwarnings = ["error::sqlalchemy.exc.SAWarning"]   # A database warning is a bug: the test fails

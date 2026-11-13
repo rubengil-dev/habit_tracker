@@ -7,7 +7,6 @@ API schemas (Pydantic):
 
 # Imports
 import datetime as dt
-from itertools import pairwise
 from typing import Annotated
 from uuid import UUID
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -15,19 +14,15 @@ from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, ValidationError, field_validator, model_validator
 
 from app.enums import BadgeKind, GoalMode, MetricKind, Period, TagRule, Tier
-from app.services.tiers import is_count, is_descending
+from app.services.badge_rules import check_badge
 
 # Text fields
 Name = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=60)]
 Unit = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=20)]
 
-# Number fields: no infinity or NaN
-Value = Annotated[float, Field(allow_inf_nan=False)]
+# Number fields: never negative, no infinity or NaN
+Value = Annotated[float, Field(ge=0, allow_inf_nan=False)]
 Threshold = Annotated[float, Field(gt=0, allow_inf_nan=False)]
-
-# Badge kinds with a period goal, and with a bar on a metric
-PERIODIC = (BadgeKind.CONSISTENCY, BadgeKind.STREAK)
-WITH_BAR = (BadgeKind.OBJECTIVE, BadgeKind.CONSISTENCY, BadgeKind.STREAK)
 
 
 class Input(BaseModel):
@@ -259,9 +254,7 @@ class BadgeCreate(Input):
     @model_validator(mode="after")
     def coherent(self):
         """Fields each kind needs and none it does not use, tag filters that fit together, tiers in order."""
-        check_kind_fields(self)
-        check_tag_filters(self)
-        check_tiers(self)
+        check_badge(self)
         return self
 
 
@@ -376,50 +369,3 @@ def check_as_whole(schema: type[BaseModel], row, changes: dict, extra: dict | No
     except ValidationError as error:
         raise RequestValidationError(error.errors()) from error
 
-
-# Badge rules
-
-def check_kind_fields(badge: BadgeCreate):
-    """Fields each badge kind needs, and none it does not use."""
-    kind = badge.kind
-    goal = (badge.period, badge.target, badge.mode)
-
-    if kind == BadgeKind.RECORD and badge.metric_id is None:
-        raise ValueError("A record needs a metric")
-    if kind == BadgeKind.OBJECTIVE and (badge.metric_id is None or badge.threshold is None):
-        raise ValueError("An objective needs a metric and a threshold")
-    if kind in PERIODIC and None in goal:
-        raise ValueError("Consistency and streak badges need period, target and mode")
-    if kind not in PERIODIC and goal != (None, None, None):
-        raise ValueError("Only consistency and streak badges have period, target and mode")
-    if kind not in WITH_BAR and badge.threshold is not None:
-        raise ValueError("Only objective, consistency and streak badges have a threshold")
-    if kind in PERIODIC and (badge.metric_id is None) != (badge.threshold is None):
-        raise ValueError("In consistency and streak badges, a metric comes with a threshold")
-    if kind == BadgeKind.HISTORIC and badge.metric_id is None and not badge.higher_is_better:
-        raise ValueError("A count of sessions always goes up: higher_is_better must be true")
-    if badge.target == 0 and badge.mode == GoalMode.MIN:
-        raise ValueError("A goal of at least 0 is always met: use at least 1, or at most 0")
-
-
-def check_tag_filters(badge: BadgeCreate):
-    """Untagged only, or tag rules; each tag once."""
-    tag_ids = badge.required_tag_ids + badge.excluded_tag_ids
-
-    if badge.untagged_only and tag_ids:
-        raise ValueError("An untagged-only badge cannot require or exclude tags")
-    if len(set(tag_ids)) != len(tag_ids):
-        raise ValueError("Each tag can appear only once, as required or as excluded")
-
-
-def check_tiers(badge: BadgeCreate):
-    """Thresholds strictly in the badge's direction, from unlocked to diamond, and whole in counts."""
-    tiers = [badge.unlocked, badge.bronze, badge.silver, badge.gold, badge.diamond]
-    pairs = list(pairwise(tiers))
-
-    if is_count(badge) and not all(tier.is_integer() for tier in tiers):
-        raise ValueError("This badge counts sessions or periods: its thresholds must be whole numbers")
-    if is_descending(badge) and not all(high > low for high, low in pairs):
-        raise ValueError("Lower is better: thresholds must go down from unlocked to diamond")
-    if not is_descending(badge) and not all(low < high for low, high in pairs):
-        raise ValueError("Thresholds must go up from unlocked to diamond")

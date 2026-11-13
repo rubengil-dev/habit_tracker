@@ -16,6 +16,7 @@ from app.enums import TagRule
 from app.errors import ApiError
 from app.models import Badge, BadgeTag, Habit, Metric, Tag, User
 from app.schemas import BadgeCreate, BadgeOut, BadgeUpdate, TiersOut, check_as_whole
+from app.services.badge_rules import check_metric_fits
 from app.services.badges import badge_progress, recalculate_badges
 from app.services.history import load_history
 from app.services.tiers import suggest_tiers
@@ -67,7 +68,7 @@ def create_badge(data: BadgeCreate, habit: Habit = Depends(owned_habit), today: 
                  db: Session = Depends(get_db)):
     """Creates a badge; it takes the habit's history at once and starts at the tier it has earned."""
     if data.metric_id is not None:
-        find_in_habit(db, Metric, [data.metric_id], habit)
+        check_metric(db, habit, data)
 
     # Create
     badge = Badge(
@@ -144,6 +145,16 @@ def badge_out(badge: Badge, history: list, habit: Habit, today: dt.date) -> Badg
     """Badge row → response, with its progress in the current period."""
     progress = badge_progress(badge, history, habit.start_date, today)
     return BadgeOut.model_validate(badge).model_copy(update={"progress": progress})
+
+
+def check_metric(db: Session, habit: Habit, data: BadgeCreate):
+    """The badge's metric: of the same habit (404 / 400), and one its kind can use (400)."""
+    metric = find_in_habit(db, Metric, [data.metric_id], habit)[0]
+
+    try:
+        check_metric_fits(data.kind, metric.kind)
+    except ValueError as error:
+        raise ApiError(400, "historic_of_ratio", str(error)) from None
 
 
 def tag_rules(db: Session, habit: Habit, required_ids: list, excluded_ids: list) -> list[BadgeTag]:

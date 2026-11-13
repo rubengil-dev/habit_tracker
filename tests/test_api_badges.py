@@ -23,6 +23,8 @@ INVALID = {
     "historic with a threshold":        lambda run: dict(kind="historic", metric_id=str(run.km.id), threshold=10),
     "consistency metric without bar":   lambda run: dict(kind="consistency", metric_id=str(run.km.id), period="weekly", target=1, mode="min"),
     "session count going down":         lambda run: dict(kind="historic", higher_is_better=False, **reversed_tiers()),
+    "metric sum going down":            lambda run: dict(kind="historic", metric_id=str(run.km.id), higher_is_better=False, **reversed_tiers()),
+    "negative bar":                     lambda run: dict(kind="objective", metric_id=str(run.km.id), threshold=-1),
     "at least 0":                       lambda run: dict(kind="streak", period="daily", target=0, mode="min"),
     "untagged only with a tag":         lambda run: dict(kind="historic", untagged_only=True, required_tag_ids=[str(run.rain.id)]),
     "tag required and excluded":        lambda run: dict(kind="historic", required_tag_ids=[str(run.rain.id)], excluded_tag_ids=[str(run.rain.id)]),
@@ -72,6 +74,14 @@ def test_metric_and_tags_of_the_same_habit(client, db, user, run):
 
     assert create(client, run.habit, kind="record", metric_id=str(pages.id)).status_code == 400
     assert create(client, run.habit, kind="historic", required_tag_ids=["00000000-0000-0000-0000-000000000000"]).status_code == 404
+
+
+def test_historic_of_a_ratio_rejected(client, run):
+    """Adding paces up means nothing → 400; a record or an objective on pace is fine."""
+    response = create(client, run.habit, kind="historic", metric_id=str(run.pace.id))
+
+    assert (response.status_code, response.json()["code"]) == (400, "historic_of_ratio")
+    assert create(client, run.habit, kind="objective", metric_id=str(run.pace.id), threshold=300).status_code == 201
 
 
 # Editing

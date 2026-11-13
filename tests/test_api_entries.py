@@ -49,7 +49,7 @@ def test_dates_checked(client, run):
 
 
 def test_values_checked(client, db, user, run):
-    """Typing a ratio → 400; metric or tag of another habit → 400; unknown metric → 404; NaN → 422."""
+    """Typing a ratio → 400; metric or tag of another habit → 400; unknown metric → 404; negative or NaN → 422."""
     other = add(db, Habit(user_id=user.id, name="Read", start_date=dt.date(2026, 1, 1), goal_target=1, goal_period=Period.DAILY))
     pages = add(db, Metric(habit_id=other.id, name="Pages", kind=MetricKind.NUMBER))
     calm = add(db, Tag(habit_id=other.id, name="Calm"))
@@ -58,6 +58,7 @@ def test_values_checked(client, db, user, run):
     assert log(client, run, values={str(pages.id): 20}).status_code == 400
     assert log(client, run, tag_ids=[str(calm.id)]).status_code == 400
     assert log(client, run, values={"00000000-0000-0000-0000-000000000000": 1}).status_code == 404
+    assert log(client, run, values={str(run.time.id): -60}).status_code == 422
 
     nan = f'{{"values": {{"{run.km.id}": NaN}}}}'
     response = client.post(f"/habits/{run.habit.id}/entries", content=nan, headers={"Content-Type": "application/json"})

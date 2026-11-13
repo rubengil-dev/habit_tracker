@@ -7,6 +7,7 @@ Database connection:
 
 # Imports
 from functools import lru_cache
+from fastapi import Depends
 from sqlalchemy import Engine, MetaData, create_engine
 from sqlalchemy.orm import DeclarativeBase, Session
 
@@ -34,10 +35,10 @@ def get_engine() -> Engine:
     return create_engine(sqlalchemy_url(get_settings().database_url), pool_pre_ping=True)
 
 
-def get_db():
-    """Session provider: one session per request, rolled back on any error."""
+def get_db(engine: Engine = Depends(get_engine)):
+    """Session provider: one session per request, rolled back on any error. The tests swap the engine."""
 
-    db = Session(get_engine())
+    db = Session(engine)
 
     try:
         yield db

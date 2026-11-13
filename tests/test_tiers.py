@@ -3,14 +3,23 @@ Badge tiers:
     - Tier of a value, going up or down
     - No value yet is locked (v1 bug 3)
     - Suggested thresholds
+    - Random ends and values: suggestions always valid, tiers never go backwards
 """
 
 # Imports
 import pytest
+from hypothesis import assume, given
+from hypothesis import strategies as st
 
 from app.enums import BadgeKind, Tier
 from app.services.tiers import is_count, suggest_tiers, tier_for
 from tests.helpers import make_badge
+
+# Random positive ends, from tiny decimals to millions
+ENDS = st.floats(min_value=0.001, max_value=1e7, allow_nan=False, allow_infinity=False)
+
+# Tiers from worst to best
+TIER_RANK = list(Tier)
 
 # Pace in seconds per km: lower is better
 DESCENDING = dict(unlocked=400, bronze=360, silver=330, gold=300, diamond=270)
@@ -74,9 +83,9 @@ def test_suggested_tiers_stay_in_order_in_narrow_ranges():
     assert tiers == sorted(set(tiers))
 
 
-@pytest.mark.parametrize(("first", "diamond"), [(0, 100), (-5, 100), (100, 100)])
+@pytest.mark.parametrize(("first", "diamond"), [(0, 100), (-5, 100), (100, 100), (1e7, 9999999.999999998)])
 def test_suggested_tiers_need_valid_ends(first, diamond):
-    """Both ends positive and different."""
+    """Both ends positive, different, and not so close that the thresholds in between repeat (found by the random test)."""
     with pytest.raises(ValueError):
         suggest_tiers(first, diamond)
 
@@ -110,3 +119,40 @@ def test_suggested_whole_tiers_need_room_whole_ends_and_going_up(first, diamond)
 def test_which_badges_are_counts(fields, count):
     """Counts: sessions, objectives and periods; metric sums and records are not."""
     assert is_count(make_badge(**fields)) is count
+
+
+# Random ends and values
+
+@given(first=ENDS, diamond=ENDS)
+def test_suggested_tiers_always_valid(first, diamond):
+    """Any two different positive ends → five thresholds, ends kept, strictly in order; or, if they are almost equal, ValueError."""
+    assume(first != diamond)
+    try:
+        tiers = suggest_tiers(first, diamond)
+    except ValueError:
+        assert abs(diamond - first) < 1e-12 * max(first, diamond)
+        return
+
+    assert len(tiers) == 5 and (tiers[0], tiers[-1]) == (first, diamond)
+    assert tiers == sorted(set(tiers), reverse=first > diamond)
+
+
+@given(first=st.integers(1, 10_000), room=st.integers(4, 1_000_000))
+def test_suggested_whole_tiers_always_valid(first, room):
+    """Whole ends with room for five → five different whole numbers going up, ends kept."""
+    tiers = suggest_tiers(float(first), float(first + room), whole=True)
+
+    assert (tiers[0], tiers[-1]) == (first, first + room)
+    assert all(tier.is_integer() for tier in tiers)
+    assert tiers == sorted(set(tiers))
+
+
+@given(low=st.floats(0, 1000), high=st.floats(0, 1000), higher_is_better=st.booleans())
+def test_better_value_never_lower_tier(low, high, higher_is_better):
+    """A better value never gets a lower tier, going up or down."""
+    assume(low <= high)
+    tiers = DESCENDING if not higher_is_better else dict(unlocked=1, bronze=5, silver=10, gold=50, diamond=100)
+    badge = make_badge(kind=BadgeKind.RECORD, metric_id=1, higher_is_better=higher_is_better, **tiers)
+    worse, better = (low, high) if higher_is_better else (high, low)
+
+    assert TIER_RANK.index(tier_for(badge, better)) >= TIER_RANK.index(tier_for(badge, worse))

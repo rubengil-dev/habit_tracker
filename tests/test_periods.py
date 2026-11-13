@@ -2,14 +2,21 @@
 Natural calendar periods and the user's today:
     - Weeks from Monday to Sunday (v1 bug 2)
     - Every period kind, across year ends and leap years
+    - Random days: every period holds its day, and periods follow one another without gaps
 """
 
 # Imports
 import datetime as dt
 import pytest
+from hypothesis import given
+from hypothesis import strategies as st
 
 from app.enums import Period
-from app.services.periods import local_today, period_end, period_start, period_starts
+from app.services.periods import local_today, next_period_start, period_end, period_start, period_starts
+
+# Random days and periods
+DAYS = st.dates(min_value=dt.date(2000, 1, 1), max_value=dt.date(2100, 12, 31))
+PERIODS = st.sampled_from(Period)
 
 
 def test_week_runs_monday_to_sunday():
@@ -58,3 +65,29 @@ def test_local_today_follows_timezone():
     behind = local_today("Pacific/Pago_Pago")
 
     assert (ahead - behind).days in (1, 2)
+
+
+# Random days
+
+@given(day=DAYS, period=PERIODS)
+def test_period_holds_its_day(day, period):
+    """Start ≤ day ≤ end, the start is its own period's start, and the next period begins the day after the end."""
+    start, end = period_start(day, period), period_end(day, period)
+
+    assert start <= day <= end
+    assert period_start(start, period) == period_start(end, period) == start
+    assert next_period_start(start, period) == end + dt.timedelta(days=1)
+
+
+@given(first=DAYS, last=DAYS, period=PERIODS)
+def test_period_starts_without_gaps(first, last, period):
+    """From first's period to last's, each start right after the one before; nothing when last comes first."""
+    starts = period_starts(first, last, period)
+
+    if period_start(last, period) < period_start(first, period):
+        assert starts == []
+        return
+
+    assert starts[0] == period_start(first, period)
+    assert starts[-1] == period_start(last, period)
+    assert all(next_period_start(a, period) == b for a, b in zip(starts, starts[1:], strict=False))

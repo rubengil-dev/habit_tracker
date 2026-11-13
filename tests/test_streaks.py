@@ -3,14 +3,20 @@ Streaks of a habit, from its goal:
     - At least n: the current period adds once met and never breaks
     - At most n (avoid): the current period adds only when it closes, and breaks as soon as it goes over
     - Bounded by the start date (v1 bug 4) and retroactive when the goal changes
+    - Random outcomes and sessions: same streaks as a plain count, and one more session never moves them the wrong way
 """
 
 # Imports
 import datetime as dt
+from hypothesis import given
+from hypothesis import strategies as st
 
 from app.enums import GoalMode, Period
-from app.services.streaks import habit_streaks
+from app.services.streaks import Outcome, habit_streaks, streaks
 from tests.helpers import facts, make_habit
+
+# Random session days, between the habit's start (1/10/2026) and TODAY
+SESSION_DAYS = st.lists(st.dates(min_value=dt.date(2026, 10, 1), max_value=dt.date(2026, 10, 26)), max_size=40)
 
 # Monday
 TODAY = dt.date(2026, 10, 26)
@@ -94,3 +100,40 @@ def test_avoid_weekly_limit():
 def test_nothing_before_start_date():
     """A habit starting tomorrow has no streak yet."""
     assert streaks_of([], goal_target=0, goal_mode=GoalMode.MAX, start_date=dt.date(2026, 10, 27)) == (0, 0)
+
+
+# Random outcomes and sessions
+
+@given(outcomes=st.lists(st.sampled_from(Outcome), max_size=60))
+def test_streaks_match_a_plain_count(outcomes):
+    """Split at every missed period: best = most met in a stretch, current = met in the last stretch."""
+    stretches = [[]]
+    for outcome in outcomes:
+        if outcome == Outcome.MISSED:
+            stretches.append([])
+        else:
+            stretches[-1].append(outcome)
+    met_per_stretch = [stretch.count(Outcome.MET) for stretch in stretches]
+
+    assert streaks(outcomes) == (met_per_stretch[-1], max(met_per_stretch))
+
+
+@given(dates=SESSION_DAYS, extra=st.dates(min_value=dt.date(2026, 10, 1), max_value=dt.date(2026, 10, 26)),
+       period=st.sampled_from([Period.DAILY, Period.WEEKLY]), target=st.integers(1, 3))
+def test_one_more_session_never_lowers_a_streak(dates, extra, period, target):
+    """At least n: an extra session can only keep or raise the current and best streak."""
+    before = streaks_of(dates, goal_period=period, goal_target=target)
+    after = streaks_of([*dates, extra], goal_period=period, goal_target=target)
+
+    assert after[0] >= before[0] and after[1] >= before[1]
+
+
+@given(dates=SESSION_DAYS, extra=st.dates(min_value=dt.date(2026, 10, 1), max_value=dt.date(2026, 10, 26)),
+       period=st.sampled_from([Period.DAILY, Period.WEEKLY]), target=st.integers(0, 2))
+def test_one_more_slip_never_raises_a_streak(dates, extra, period, target):
+    """At most n (avoid): an extra session can only keep or lower the current and best streak."""
+    goal = dict(goal_period=period, goal_target=target, goal_mode=GoalMode.MAX)
+    before = streaks_of(dates, **goal)
+    after = streaks_of([*dates, extra], **goal)
+
+    assert after[0] <= before[0] and after[1] <= before[1]

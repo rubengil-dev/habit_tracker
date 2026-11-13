@@ -38,8 +38,8 @@ def tier_for(badge: Badge, value: float | None) -> Tier:
 
 
 def is_descending(badge: Badge) -> bool:
-    """Lower is better only in historic and record; counts always go up."""
-    return badge.kind in (BadgeKind.HISTORIC, BadgeKind.RECORD) and not badge.higher_is_better
+    """Lower is better only in records; sums and counts always go up."""
+    return badge.kind == BadgeKind.RECORD and not badge.higher_is_better
 
 
 def is_count(badge: Badge) -> bool:
@@ -62,6 +62,7 @@ def suggest_tiers(first: float, diamond: float, whole: bool = False) -> list[flo
         - Exponential progression between the two ends, which are kept as typed
         - The three in between, rounded as much as possible while they stay in order
         - whole: only whole numbers, for badges that count sessions or periods
+        - Ends so close that the thresholds in between would repeat → ValueError
         Example: 100, 100000 → [100, 500, 3000, 20000, 100000]
     """
     if first <= 0 or diamond <= 0 or first == diamond:
@@ -72,12 +73,12 @@ def suggest_tiers(first: float, diamond: float, whole: bool = False) -> list[flo
     if whole:
         return whole_tiers(first, diamond, middle)
 
-    for rounding in (round_friendly, round_two_figures, round_four_figures):
+    for rounding in (round_friendly, round_two_figures, round_four_figures, float):
         tiers = [first, *(rounding(value) for value in middle), diamond]
         if in_order(tiers):
             return tiers
 
-    return [first, *middle, diamond]
+    raise ValueError(f"{first:g} and {diamond:g} are too close for five different thresholds")
 
 
 def whole_tiers(first: float, diamond: float, middle: list[float]) -> list[float]:

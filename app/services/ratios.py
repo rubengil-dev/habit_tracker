@@ -11,16 +11,17 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models import Entry, EntryValue, Metric
+from app.utils.numbers import drop_float_noise
 
 
 def ratio_value(values: dict[UUID, float], metric: Metric) -> float | None:
-    """A ÷ B in one session; None if A or B is missing, or B is 0."""
+    """A ÷ B in one session, without float noise; None if A or B is missing, or B is 0."""
     a = values.get(metric.operand_a_id)
     b = values.get(metric.operand_b_id)
 
     if a is None or not b:
         return None
-    return a / b
+    return drop_float_noise(a / b)
 
 
 def refresh_ratios(entry: Entry, ratio_metrics: list[Metric]):

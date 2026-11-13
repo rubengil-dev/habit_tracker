@@ -5,13 +5,14 @@ Sessions endpoints: CRUD; every write answers with the badges it changed and the
 # Imports
 import datetime as dt
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.dependencies import find_in_habit, owned_entry, owned_habit, user_today
 from app.enums import MetricKind
+from app.errors import ApiError
 from app.models import Entry, EntryValue, Habit, Metric, Tag
 from app.schemas import BadgeChangeOut, EffectsOut, EntryCreate, EntryOut, EntryUpdate, EntryWriteOut
 from app.services.badges import recalculate_badges
@@ -90,9 +91,9 @@ def delete_entry(entry: Entry = Depends(owned_entry), today: dt.date = Depends(u
 def check_date(entry_date: dt.date, habit: Habit, today: dt.date):
     """A session cannot be in the future, nor before the habit starts → 400."""
     if entry_date > today:
-        raise HTTPException(status_code=400, detail="A session cannot be in the future")
+        raise ApiError(400, "future_date", "A session cannot be in the future")
     if entry_date < habit.start_date:
-        raise HTTPException(status_code=400, detail=f"The habit starts on {habit.start_date}: move its start date first")
+        raise ApiError(400, "before_start_date", f"The habit starts on {habit.start_date}: move its start date first")
 
 
 def set_values(db: Session, entry: Entry, habit: Habit, values: dict[UUID, float]):
@@ -105,7 +106,7 @@ def set_values(db: Session, entry: Entry, habit: Habit, values: dict[UUID, float
 
     for metric in metrics:
         if metric.kind == MetricKind.RATIO:
-            raise HTTPException(status_code=400, detail=f"{metric.name} is calculated: it cannot be typed in")
+            raise ApiError(400, "calculated_metric", f"{metric.name} is calculated: it cannot be typed in")
 
     entry.values = [EntryValue(metric_id=metric.id, value=values[metric.id]) for metric in metrics]
     ratios = db.scalars(select(Metric).where(Metric.habit_id == habit.id, Metric.kind == MetricKind.RATIO)).all()

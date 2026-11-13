@@ -26,6 +26,11 @@ def test_ratio_value():
     assert ratio_value({TIME: 1800, KM: 0}, PACE) is None
 
 
+def test_ratio_value_without_float_noise():
+    """0.3 ÷ 0.1 → 3 (in floats it gives 2.9999999999999996)."""
+    assert ratio_value({TIME: 0.3, KM: 0.1}, PACE) == 3
+
+
 def test_refresh_adds_updates_and_removes():
     """The ratio follows the typed-in values of the session."""
     entry = Entry(values=[EntryValue(metric_id=TIME, value=1800), EntryValue(metric_id=KM, value=10)])

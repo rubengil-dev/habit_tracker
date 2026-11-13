@@ -43,12 +43,24 @@ def test_server_fields_cannot_be_sent(client):
 
 
 def test_duplicate_name_rejected(client):
-    """Two habits of the same user cannot share a name."""
+    """Two habits of the same user cannot share a name → 409 with its code, not the database's text."""
     client.post("/habits", json=RUN)
-    assert client.post("/habits", json=RUN).status_code == 400
+    response = client.post("/habits", json=RUN)
+
+    assert response.status_code == 409
+    assert response.json() == {"detail": "That name is already in use", "code": "duplicate_name"}
 
 
 # Update
+
+def test_edit_checked_as_a_whole(client, habit):
+    """An edit that ends in "at least 0" → 422 like on create, not a database error."""
+    response = client.patch(f"/habits/{habit.id}", json={"goal_target": 0})
+
+    assert response.status_code == 422
+    assert response.json()["code"] == "validation_error"
+    assert client.patch(f"/habits/{habit.id}", json={"goal_target": 0, "goal_mode": "max"}).status_code == 200
+
 
 def test_null_rejected(client, habit):
     """v1 bug 5: {"active": null} used to be saved and broke every later GET."""

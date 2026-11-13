@@ -20,7 +20,7 @@ from app.config import get_settings, sqlalchemy_url
 from app.database import Base, get_db
 from app.dependencies import COOKIE_NAME, user_today
 from app.enums import BadgeKind, MetricKind, Period
-from app.main import app
+from app.main import API_PREFIX, app
 from app.models import Badge, Habit, Metric, Tag, User
 from app.services.auth import open_session
 from tests.helpers import ASCENDING, PASSWORD_HASH, TEST_DATABASE_URL, TODAY, add
@@ -83,11 +83,15 @@ def run(db, habit):
 
 @pytest.fixture
 def anon_client(engine):
-    """API client without a session; https, so the secure cookie travels."""
+    """
+    API client without a session:
+        - https, so the secure cookie travels
+        - Paths relative to /api: client.get("/habits") → /api/habits
+    """
     app.dependency_overrides[get_db] = sessions_on(engine)
     app.dependency_overrides[user_today] = lambda: TODAY
 
-    with TestClient(app, base_url="https://testserver") as client:
+    with TestClient(app, base_url=f"https://testserver{API_PREFIX}") as client:
         yield client
 
     app.dependency_overrides.clear()

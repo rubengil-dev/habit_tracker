@@ -16,8 +16,18 @@ dependencies = [
 dev = [
     "httpx2>=2.16.0",
     "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.17.5",
     "uvicorn>=0.54.0",
 ]
+
+[tool.ruff]
+line-length = 150
+
+[tool.ruff.lint]
+# Real mistakes only (errors, undefined or unused names, likely bugs); style is set by ESTILO.md, not the linter
+select = ["E4", "E7", "E9", "F", "B"]
+ignore = ["B008"]                           # Depends() in default arguments is how FastAPI works
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -108,6 +108,12 @@ def test_every_endpoint_needs_a_session(anon_client):
     assert anon_client.post("/habits", json={}).status_code == 401
 
 
+def test_endpoints_live_under_api(client):
+    """/api/habits answers; /habits is left for the front."""
+    assert client.get("https://testserver/api/habits").status_code == 200
+    assert client.get("https://testserver/habits").status_code == 404
+
+
 # Settings
 
 def test_timezone_can_be_changed(client):

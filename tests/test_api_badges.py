@@ -39,7 +39,7 @@ def payload(**fields) -> dict:
 
 def reversed_tiers() -> dict:
     """Tiers going down: 100 → 1."""
-    return dict(zip(ASCENDING, reversed(ASCENDING.values())))
+    return dict(zip(ASCENDING, reversed(ASCENDING.values()), strict=True))
 
 
 def create(client, habit, **fields):
@@ -145,9 +145,25 @@ def test_all_badges_only_mine(client, db, run):
 
 
 def test_suggested_tiers(client):
-    """100 → 100,000 km: friendly numbers; a 0 end → 422."""
-    assert client.get("/badges/suggest-tiers", params={"first": 100, "diamond": 100000}).json() == {"tiers": [100, 500, 3000, 20000, 100000]}
-    assert client.get("/badges/suggest-tiers", params={"first": 0, "diamond": 10}).status_code == 422
+    """100 → 100,000 km: friendly numbers; whole numbers on request; a 0, infinite or tight end → 422."""
+    def suggest(**params):
+        return client.get("/badges/suggest-tiers", params=params)
+
+    assert suggest(first=100, diamond=100000).json() == {"tiers": [100, 500, 3000, 20000, 100000]}
+    assert suggest(first=1, diamond=5, whole=True).json() == {"tiers": [1, 2, 3, 4, 5]}
+    assert suggest(first=0, diamond=10).status_code == 422
+    assert suggest(first=1, diamond="inf").status_code == 422
+    assert suggest(first="nan", diamond=10).status_code == 422
+    assert suggest(first=1, diamond=4, whole=True).status_code == 422
+
+
+def test_counts_need_whole_thresholds(client, run):
+    """Sessions or periods: decimal thresholds → 422; a metric sum takes them."""
+    decimals = dict(unlocked=0.5, bronze=1.5, silver=2.5, gold=3.5, diamond=4.5)
+
+    assert create(client, run.habit, kind="historic", **decimals).status_code == 422
+    assert create(client, run.habit, kind="streak", period="daily", target=1, mode="min", **decimals).status_code == 422
+    assert create(client, run.habit, kind="historic", metric_id=str(run.km.id), **decimals).status_code == 201
 
 
 def test_delete(client, run):

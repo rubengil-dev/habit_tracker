@@ -17,6 +17,7 @@ from app.services.history import EntryFacts, load_history
 from app.services.periods import period_start
 from app.services.streaks import Outcome, period_outcomes, streaks
 from app.services.tiers import tier_for
+from app.utils.numbers import drop_float_noise
 
 
 @dataclass
@@ -129,12 +130,12 @@ def passing(badge: Badge, entries: list[EntryFacts]) -> list[EntryFacts]:
 # Values per kind
 
 def historic_value(badge: Badge, entries: list[EntryFacts]) -> float | None:
-    """Sum of the metric; without a metric, number of sessions."""
+    """Sum of the metric, without float noise; without a metric, number of sessions."""
     if badge.metric_id is None:
         return float(len(entries))
 
     values = metric_values(badge, entries)
-    return sum(values) if values else None
+    return drop_float_noise(sum(values)) if values else None
 
 
 def record_value(badge: Badge, entries: list[EntryFacts]) -> float | None:

@@ -3,13 +3,14 @@ Metrics endpoints: CRUD; a new ratio is filled in for every past session.
 """
 
 # Imports
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.dependencies import find_in_habit, owned_habit, owned_metric
 from app.enums import MetricKind
+from app.errors import ApiError
 from app.models import Habit, Metric
 from app.schemas import MetricCreate, MetricOut, MetricUpdate
 from app.services.ratios import backfill_ratio
@@ -76,4 +77,4 @@ def check_operands(db: Session, habit: Habit, data: MetricCreate):
     """A ratio's operands: metrics of the same habit (404 / 400), and not ratios themselves (400)."""
     for operand in find_in_habit(db, Metric, [data.operand_a_id, data.operand_b_id], habit):
         if operand.kind == MetricKind.RATIO:
-            raise HTTPException(status_code=400, detail=f"{operand.name} is a ratio: a ratio cannot use another one")
+            raise ApiError(400, "ratio_of_ratio", f"{operand.name} is a ratio: a ratio cannot use another one")

@@ -9,7 +9,7 @@ Badge tiers:
 import pytest
 
 from app.enums import BadgeKind, Tier
-from app.services.tiers import suggest_tiers, tier_for
+from app.services.tiers import is_count, suggest_tiers, tier_for
 from tests.helpers import make_badge
 
 # Pace in seconds per km: lower is better
@@ -79,3 +79,34 @@ def test_suggested_tiers_need_valid_ends(first, diamond):
     """Both ends positive and different."""
     with pytest.raises(ValueError):
         suggest_tiers(first, diamond)
+
+
+@pytest.mark.parametrize(("first", "diamond", "tiers"), [
+    (1,     5,      [1, 2, 3, 4, 5]),                       # Tight: nudged apart
+    (1,     7,      [1, 2, 3, 5, 7]),
+    (1,     365,    [1, 5, 20, 100, 365]),                  # Days in a year
+    (2,     12,     [2, 3, 5, 10, 12]),
+])
+def test_suggested_whole_tiers(first, diamond, tiers):
+    """Counts: whole numbers only, friendly where they fit."""
+    assert suggest_tiers(first, diamond, whole=True) == tiers
+
+
+@pytest.mark.parametrize(("first", "diamond"), [(1, 4), (1.5, 10), (10, 1)])
+def test_suggested_whole_tiers_need_room_whole_ends_and_going_up(first, diamond):
+    """No room for five whole numbers, decimal ends, or going down → ValueError."""
+    with pytest.raises(ValueError):
+        suggest_tiers(first, diamond, whole=True)
+
+
+@pytest.mark.parametrize(("fields", "count"), [
+    (dict(kind=BadgeKind.HISTORIC),                         True),
+    (dict(kind=BadgeKind.HISTORIC, metric_id=1),            False),
+    (dict(kind=BadgeKind.RECORD, metric_id=1),              False),
+    (dict(kind=BadgeKind.OBJECTIVE, metric_id=1),           True),
+    (dict(kind=BadgeKind.CONSISTENCY),                      True),
+    (dict(kind=BadgeKind.STREAK),                           True),
+])
+def test_which_badges_are_counts(fields, count):
+    """Counts: sessions, objectives and periods; metric sums and records are not."""
+    assert is_count(make_badge(**fields)) is count

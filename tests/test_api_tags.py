@@ -14,12 +14,12 @@ from tests.helpers import ASCENDING, add, count
 
 
 def test_create_and_rename(client, habit):
-    """Created, renamed; a repeated name in the same habit → 400."""
+    """Created, renamed; a repeated name in the same habit → 409."""
     rain = client.post(f"/habits/{habit.id}/tags", json={"name": "Rain"}).json()
     client.post(f"/habits/{habit.id}/tags", json={"name": "Tired"})
 
     assert client.patch(f"/tags/{rain['id']}", json={"name": "Storm"}).json()["name"] == "Storm"
-    assert client.patch(f"/tags/{rain['id']}", json={"name": "Tired"}).status_code == 400
+    assert client.patch(f"/tags/{rain['id']}", json={"name": "Tired"}).status_code == 409
 
 
 def test_badges_that_would_be_deleted(client, db, habit):

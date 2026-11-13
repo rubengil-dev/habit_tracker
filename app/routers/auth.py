@@ -4,11 +4,12 @@ Auth endpoints: login, logout and the logged-in user's settings.
 
 # Imports
 import datetime as dt
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.dependencies import COOKIE_NAME, current_user, set_session_cookie
+from app.errors import ApiError
 from app.models import User
 from app.schemas import LoginIn, UserOut, UserUpdate
 from app.services.auth import LoginLocked, close_session, login
@@ -25,14 +26,13 @@ def log_in(data: LoginIn, response: Response, db: Session = Depends(get_db)):
         token = login(db, data.username, data.password, now)
     except LoginLocked as locked:
         wait = int((locked.until - now).total_seconds()) + 1
-        raise HTTPException(status_code=429, detail="Too many failed logins, try again later",
-                            headers={"Retry-After": str(wait)})
+        raise ApiError(429, "login_locked", "Too many failed logins, try again later", headers={"Retry-After": str(wait)}) from None
 
     # Saved either way: a failure counts towards the lockout
     db.commit()
 
     if token is None:
-        raise HTTPException(status_code=401, detail="Wrong username or password")
+        raise ApiError(401, "wrong_credentials", "Wrong username or password")
     set_session_cookie(response, token)
 
 

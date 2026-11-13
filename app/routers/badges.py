@@ -6,17 +6,16 @@ Badges endpoints: CRUD and suggested thresholds:
 
 # Imports
 import datetime as dt
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.exceptions import RequestValidationError
-from pydantic import ValidationError
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.dependencies import current_user, find_in_habit, owned_badge, owned_habit, user_today
 from app.enums import TagRule
+from app.errors import ApiError
 from app.models import Badge, BadgeTag, Habit, Metric, Tag, User
-from app.schemas import BadgeCreate, BadgeOut, BadgeUpdate, TiersOut
+from app.schemas import BadgeCreate, BadgeOut, BadgeUpdate, TiersOut, check_as_whole
 from app.services.badges import badge_progress, recalculate_badges
 from app.services.history import load_history
 from app.services.tiers import suggest_tiers
@@ -35,12 +34,16 @@ def list_badges(user: User = Depends(current_user), today: dt.date = Depends(use
 
 
 @router.get("/badges/suggest-tiers", status_code=200, response_model=TiersOut)
-def get_suggested_tiers(first: float, diamond: float, user: User = Depends(current_user)):
-    """Suggested thresholds from the first one to diamond, to review before saving the badge."""
+def get_suggested_tiers(first: float = Query(gt=0, allow_inf_nan=False), diamond: float = Query(gt=0, allow_inf_nan=False),
+                        whole: bool = False, user: User = Depends(current_user)):
+    """
+    Suggested thresholds from the first one to diamond, to review before saving the badge:
+        - whole: only whole numbers, for badges that count sessions or periods
+    """
     try:
-        return TiersOut(tiers=suggest_tiers(first, diamond))
+        return TiersOut(tiers=suggest_tiers(first, diamond, whole))
     except ValueError as error:
-        raise HTTPException(status_code=422, detail=str(error))
+        raise ApiError(422, "invalid_range", str(error)) from error
 
 
 @router.get("/habits/{habit_id}/badges", status_code=200, response_model=list[BadgeOut])
@@ -154,11 +157,8 @@ def tag_rules(db: Session, habit: Habit, required_ids: list, excluded_ids: list)
 
 def check_merged(badge: Badge, changes: dict) -> BadgeCreate:
     """The badge as it would end up, checked with the same rules as a new one → 422 if it breaks one."""
-    current = {field: getattr(badge, field) for field in BadgeCreate.model_fields if hasattr(badge, field)}
-    current["required_tag_ids"] = [rule.tag_id for rule in badge.tag_rules if rule.rule == TagRule.REQUIRED]
-    current["excluded_tag_ids"] = [rule.tag_id for rule in badge.tag_rules if rule.rule == TagRule.EXCLUDED]
-
-    try:
-        return BadgeCreate.model_validate(current | changes)
-    except ValidationError as error:
-        raise RequestValidationError(error.errors())
+    tag_ids = {
+        "required_tag_ids": [rule.tag_id for rule in badge.tag_rules if rule.rule == TagRule.REQUIRED],
+        "excluded_tag_ids": [rule.tag_id for rule in badge.tag_rules if rule.rule == TagRule.EXCLUDED],
+    }
+    return check_as_whole(BadgeCreate, badge, changes, tag_ids)

@@ -7,13 +7,15 @@ API schemas (Pydantic):
 
 # Imports
 import datetime as dt
+from itertools import pairwise
 from typing import Annotated
 from uuid import UUID
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator, model_validator
+from fastapi.exceptions import RequestValidationError
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, ValidationError, field_validator, model_validator
 
 from app.enums import BadgeKind, GoalMode, MetricKind, Period, TagRule, Tier
-from app.services.tiers import is_descending
+from app.services.tiers import is_count, is_descending
 
 # Text fields
 Name = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=60)]
@@ -62,7 +64,7 @@ class UserUpdate(Input):
         try:
             ZoneInfo(value)
         except (ZoneInfoNotFoundError, ValueError):
-            raise ValueError(f"Unknown timezone: {value}")
+            raise ValueError(f"Unknown timezone: {value}") from None
         return value
 
 
@@ -360,6 +362,21 @@ class ExportOut(BaseModel):
     habits: list[HabitExportOut]
 
 
+# Updates checked as a whole
+
+def check_as_whole(schema: type[BaseModel], row, changes: dict, extra: dict | None = None) -> BaseModel:
+    """
+    A row as it would end up after a partial update, checked with the rules of a new one → 422 if it breaks one:
+        - extra: current values the row does not hold as columns (a badge's tag ids)
+    """
+    current = {field: getattr(row, field) for field in schema.model_fields if hasattr(row, field)}
+
+    try:
+        return schema.model_validate(current | (extra or {}) | changes)
+    except ValidationError as error:
+        raise RequestValidationError(error.errors()) from error
+
+
 # Badge rules
 
 def check_kind_fields(badge: BadgeCreate):
@@ -396,10 +413,12 @@ def check_tag_filters(badge: BadgeCreate):
 
 
 def check_tiers(badge: BadgeCreate):
-    """Thresholds strictly in the badge's direction, from unlocked to diamond."""
+    """Thresholds strictly in the badge's direction, from unlocked to diamond, and whole in counts."""
     tiers = [badge.unlocked, badge.bronze, badge.silver, badge.gold, badge.diamond]
-    pairs = list(zip(tiers, tiers[1:]))
+    pairs = list(pairwise(tiers))
 
+    if is_count(badge) and not all(tier.is_integer() for tier in tiers):
+        raise ValueError("This badge counts sessions or periods: its thresholds must be whole numbers")
     if is_descending(badge) and not all(high > low for high, low in pairs):
         raise ValueError("Lower is better: thresholds must go down from unlocked to diamond")
     if not is_descending(badge) and not all(low < high for low, high in pairs):

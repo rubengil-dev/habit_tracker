@@ -50,6 +50,12 @@ def test_historic_sum_of_metric():
     assert value_of(make_badge(kind=BadgeKind.HISTORIC, metric_id=KM)) == 27.5
 
 
+def test_historic_sum_without_float_noise():
+    """0.1 + 0.7 km reaches a threshold of 0.8 (in floats it adds up to 0.7999999999999999)."""
+    history = [facts(START, {KM: 0.1}), facts(START, {KM: 0.7})]
+    assert value_of(make_badge(kind=BadgeKind.HISTORIC, metric_id=KM), history) == 0.8
+
+
 def test_historic_number_of_sessions():
     """Without a metric it counts sessions, the one without values too ("I did it")."""
     assert value_of(make_badge(kind=BadgeKind.HISTORIC)) == 4

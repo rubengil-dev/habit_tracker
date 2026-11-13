@@ -8,11 +8,12 @@ FastAPI dependencies shared by the routers:
 # Imports
 import datetime as dt
 from uuid import UUID
-from fastapi import Depends, HTTPException, Request, Response
+from fastapi import Depends, Request, Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.errors import ApiError
 from app.models import Badge, Entry, Habit, Metric, Tag, User
 from app.services.auth import SESSION_LIFETIME, find_session, renew_if_due
 from app.services.periods import local_today
@@ -30,7 +31,7 @@ def current_user(request: Request, response: Response, db: Session = Depends(get
     session = find_session(db, token, now) if token else None
 
     if session is None:
-        raise HTTPException(status_code=401, detail="Not logged in")
+        raise ApiError(401, "not_logged_in", "Not logged in")
 
     if renew_if_due(session, now):
         db.commit()
@@ -95,7 +96,7 @@ def find_owned(db: Session, model, row_id: UUID, user: User):
 
     row = db.scalar(query)
     if row is None:
-        raise HTTPException(status_code=404, detail=f"{model.__name__} not found")
+        raise ApiError(404, "not_found", f"{model.__name__} not found")
     return row
 
 
@@ -114,8 +115,8 @@ def find_in_habit(db: Session, model, ids: list[UUID], habit: Habit) -> list:
 
     for row_id in ids:
         if row_id not in rows:
-            raise HTTPException(status_code=404, detail=f"{model.__name__} {row_id} not found")
+            raise ApiError(404, "not_found", f"{model.__name__} {row_id} not found")
         if rows[row_id].habit_id != habit.id:
-            raise HTTPException(status_code=400, detail=f"{model.__name__} {row_id} belongs to another habit")
+            raise ApiError(400, "other_habit", f"{model.__name__} {row_id} belongs to another habit")
 
     return [rows[row_id] for row_id in ids]

@@ -4,14 +4,15 @@ Habits endpoints: CRUD; one habit comes with its current and best streak.
 
 # Imports
 import datetime as dt
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.dependencies import current_user, owned_habit, user_today
+from app.errors import ApiError
 from app.models import Entry, Habit, User
-from app.schemas import HabitCreate, HabitDetailOut, HabitOut, HabitUpdate
+from app.schemas import HabitCreate, HabitDetailOut, HabitOut, HabitUpdate, check_as_whole
 from app.services.badges import recalculate_badges
 from app.services.history import load_history
 from app.services.streaks import habit_streaks
@@ -57,8 +58,9 @@ def create_habit(data: HabitCreate, user: User = Depends(current_user), today: d
 @router.patch("/habits/{habit_id}", status_code=200, response_model=HabitOut)
 def update_habit(data: HabitUpdate, habit: Habit = Depends(owned_habit), today: dt.date = Depends(user_today),
                  db: Session = Depends(get_db)):
-    """Partial update; a new start date recalculates the badges, which count periods from it."""
+    """Partial update, checked as a whole habit; a new start date recalculates the badges, which count periods from it."""
     changes = data.model_dump(exclude_unset=True)
+    check_as_whole(HabitCreate, habit, changes)
 
     if "start_date" in changes:
         check_not_future(changes["start_date"], today)
@@ -85,7 +87,7 @@ def delete_habit(habit: Habit = Depends(owned_habit), db: Session = Depends(get_
 def check_not_future(start_date: dt.date, today: dt.date):
     """A habit cannot start in the future → 400."""
     if start_date > today:
-        raise HTTPException(status_code=400, detail="The start date cannot be in the future")
+        raise ApiError(400, "future_date", "The start date cannot be in the future")
 
 
 def check_no_sessions_before(db: Session, habit: Habit, start_date: dt.date):
@@ -93,4 +95,4 @@ def check_no_sessions_before(db: Session, habit: Habit, start_date: dt.date):
     first_session = db.scalar(select(func.min(Entry.date)).where(Entry.habit_id == habit.id))
 
     if first_session is not None and first_session < start_date:
-        raise HTTPException(status_code=400, detail=f"There are sessions before {start_date}: the first one is on {first_session}")
+        raise ApiError(400, "sessions_before_start", f"There are sessions before {start_date}: the first one is on {first_session}")
